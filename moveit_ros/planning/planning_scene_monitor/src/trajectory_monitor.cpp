@@ -36,11 +36,11 @@
 
 #include <moveit/planning_scene_monitor/trajectory_monitor.h>
 #include <moveit/trajectory_processing/trajectory_tools.h>
-#include <ros/rate.h>
+#include "rclcpp/rate.hpp"
 #include <limits>
 #include <memory>
 
-static const std::string LOGNAME = "TrajectoryMonitor";
+rclcpp::Logger LOGGER = rclcpp::get_logger("trajectory_monitor");
 
 planning_scene_monitor::TrajectoryMonitor::TrajectoryMonitor(const CurrentStateMonitorConstPtr& state_monitor,
                                                              double sampling_frequency)
@@ -58,14 +58,12 @@ planning_scene_monitor::TrajectoryMonitor::~TrajectoryMonitor()
 
 void planning_scene_monitor::TrajectoryMonitor::setSamplingFrequency(double sampling_frequency)
 {
-  if (sampling_frequency != sampling_frequency_)
-    return;  // silently return if nothing changes
-
-  if (sampling_frequency <= std::numeric_limits<double>::epsilon())
-    ROS_INFO_NAMED(LOGNAME, "Disabling trajectory recording");
-  else
-    ROS_DEBUG_NAMED(LOGNAME, "Setting trajectory sampling frequency to %.1f", sampling_frequency);
-  sampling_frequency_ = sampling_frequency;
+  if (sampling_frequency <= std::numeric_limits<double>::epsilon()){
+    RCLCPP_ERROR(LOGGER,"The sampling frequency for trajectory states should be positive");
+    }
+  else{
+    sampling_frequency_ = sampling_frequency;
+    }
 }
 
 bool planning_scene_monitor::TrajectoryMonitor::isActive() const
@@ -78,7 +76,7 @@ void planning_scene_monitor::TrajectoryMonitor::startTrajectoryMonitor()
   if (sampling_frequency_ > std::numeric_limits<double>::epsilon() && !record_states_thread_)
   {
     record_states_thread_.reset(new boost::thread(boost::bind(&TrajectoryMonitor::recordStates, this)));
-    ROS_DEBUG_NAMED(LOGNAME, "Started trajectory monitor");
+    RCLCPP_DEBUG(LOGGER,"Started trajectory monitor");
   }
 }
 
@@ -89,7 +87,7 @@ void planning_scene_monitor::TrajectoryMonitor::stopTrajectoryMonitor()
     std::unique_ptr<boost::thread> copy;
     copy.swap(record_states_thread_);
     copy->join();
-    ROS_DEBUG_NAMED(LOGNAME, "Stopped trajectory monitor");
+    RCLCPP_DEBUG(LOGGER,"Stopped trajectory monitor");
   }
 }
 
@@ -108,12 +106,12 @@ void planning_scene_monitor::TrajectoryMonitor::recordStates()
   if (!current_state_monitor_)
     return;
 
-  ros::Rate rate(sampling_frequency_);
+  rclcpp::Rate rate(sampling_frequency_);
 
   while (record_states_thread_)
   {
     rate.sleep();
-    std::pair<robot_state::RobotStatePtr, ros::Time> state = current_state_monitor_->getCurrentStateAndTime();
+    std::pair<robot_state::RobotStatePtr, rclcpp::Time> state = current_state_monitor_->getCurrentStateAndTime();
     if (trajectory_.empty())
     {
       trajectory_.addSuffixWayPoint(state.first, 0.0);
@@ -122,7 +120,7 @@ void planning_scene_monitor::TrajectoryMonitor::recordStates()
     }
     else
     {
-      trajectory_.addSuffixWayPoint(state.first, (state.second - last_recorded_state_time_).toSec());
+      trajectory_.addSuffixWayPoint(state.first, (state.second - last_recorded_state_time_).seconds());
       last_recorded_state_time_ = state.second;
     }
     if (state_add_callback_)

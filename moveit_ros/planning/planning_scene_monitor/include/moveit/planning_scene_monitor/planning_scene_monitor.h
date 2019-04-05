@@ -464,8 +464,8 @@ protected:
   rclcpp::Time last_update_time_;                     /// Last time the state was updated
   rclcpp::Time last_robot_motion_time_;               /// Last time the robot has moved
 
-  // ros::NodeHandle nh_;
-  // ros::NodeHandle root_nh_;
+  std::shared_ptr<rclcpp::Node> node_;
+  
   // TODO: (anasarrak) callbacks on ROS2? https://answers.ros.org/question/300874/how-do-you-use-callbackgroups-as-a-replacement-for-callbackqueues-in-ros2/
   // ros::CallbackQueue queue_;
   std::shared_ptr<rclcpp::executors::SingleThreadedExecutor> spinner_;
@@ -578,8 +578,6 @@ private:
 
   class DynamicReconfigureImpl;
   DynamicReconfigureImpl* reconfigure_impl_;
-
-  std::shared_ptr<rclcpp::Node> node_;
 
   rclcpp::Clock clock_;
 };

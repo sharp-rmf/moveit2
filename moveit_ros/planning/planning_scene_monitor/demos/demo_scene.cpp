@@ -44,14 +44,15 @@ static const std::string ROBOT_DESCRIPTION = "robot_description";
 bool shutdown_req = false;
 std::shared_ptr<rclcpp::Node> node;
 
-void signalHandler(int signum) {
+void signalHandler(int signum)
+{
   shutdown_req = true;
 }
 
 void sendKnife()
 {
   auto pub_aco = node->create_publisher<moveit_msgs::msg::AttachedCollisionObject>("attached_collision_object",
-  rmw_qos_profile_default);
+                                                                                   rmw_qos_profile_default);
   rclcpp::Clock clock;
   moveit_msgs::msg::AttachedCollisionObject aco;
   aco.link_name = "r_wrist_roll_link";
@@ -101,9 +102,10 @@ int main(int argc, char** argv)
 
   node = rclcpp::Node::make_shared("demo");
 
-  while (!shutdown_req){
-  sendKnife();
-  executor.spin_node_some(node);
+  while (!shutdown_req)
+  {
+    sendKnife();
+    executor.spin_node_some(node);
   }
 
   return 0;

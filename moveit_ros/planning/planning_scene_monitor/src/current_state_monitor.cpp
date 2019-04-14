@@ -249,7 +249,7 @@ bool planning_scene_monitor::CurrentStateMonitor::haveCompleteState(const rclcpp
     else if (it->second < old)
     {
       RCLCPP_DEBUG(node_->get_logger(),"Joint '%s' was last updated %0.3lf seconds ago (older than the allowed %0.3lf seconds)",
-                joint->getName().c_str(), (now - it->second) , age.seconds());
+                joint->getName().c_str(), (now - it->second).seconds() , age.seconds());
       result = false;
     }
   }
@@ -279,7 +279,7 @@ bool planning_scene_monitor::CurrentStateMonitor::haveCompleteState(const rclcpp
     else if (it->second < old)
     {
       RCLCPP_DEBUG(node_->get_logger(),"Joint '%s' was last updated %0.3lf seconds ago (older than the allowed %0.3lf seconds)",
-                joint->getName().c_str(), (now - it->second) , age.seconds());
+                joint->getName().c_str(), (now - it->second).seconds() , age.seconds());
       missing_states.push_back(joint->getName());
       result = false;
     }

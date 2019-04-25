@@ -1071,7 +1071,7 @@ void PlanningSceneMonitor::startWorldGeometryMonitor(const std::string& collisio
       // collision_object_filter_->registerFailureCallback(
       //     std::bind(&PlanningSceneMonitor::collisionObjectFailTFCallback, this, _1, _2));
       RCLCPP_INFO(node_->get_logger(), "Listening to '%s' using message notifier with target frame '%s'",
-                     collision_object_subscriber_->getTopic(),
+                     collision_object_subscriber_->getTopic().c_str(),
                    collision_object_filter_->getTargetFramesString().c_str());
     }
     else

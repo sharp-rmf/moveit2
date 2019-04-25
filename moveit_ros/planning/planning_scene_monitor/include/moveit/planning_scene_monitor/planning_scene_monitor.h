@@ -416,10 +416,10 @@ protected:
   void configureDefaultPadding();
 
   /** @brief Callback for a new collision object msg*/
-  void collisionObjectCallback(const moveit_msgs::msg::CollisionObject::SharedPtr obj);
+  void collisionObjectCallback(const moveit_msgs::msg::CollisionObject::SharedPtr& obj);
 
   /** @brief Callback for a new collision object msg that failed to pass the TF filter */
-  void collisionObjectFailTFCallback(const moveit_msgs::msg::CollisionObject::SharedPtr obj,
+  void collisionObjectFailTFCallback(const moveit_msgs::msg::CollisionObject::SharedPtr& obj,
                                      tf2_ros::filter_failure_reasons::FilterFailureReason reason);
 
   /** @brief Callback for a new planning scene world*/

@@ -449,8 +449,8 @@ void PlanningSceneMonitor::getMonitoredTopics(std::vector<std::string>& topics) 
   if (planning_scene_subscriber_)
     topics.push_back(planning_scene_subscriber_->get_topic_name());
   if (collision_object_subscriber_)
-    //TODO (anasarrak) get topic name?
-    // topics.push_back(collision_object_subscriber_->get_topic_name());
+    //TODO (anasarrak) This has been changed to subscriber on Moveit, look at https://github.com/ros-planning/moveit/pull/1406/files/cb9488312c00e9c8949d89b363766f092330954d#diff-fb6e26ecc9a73d59dbdae3f3e08145e6
+    topics.push_back(collision_object_subscriber_->getTopic());
   if (planning_scene_world_subscriber_)
     topics.push_back(planning_scene_world_subscriber_->get_topic_name());
 }
@@ -635,7 +635,7 @@ void PlanningSceneMonitor::newPlanningSceneWorldCallback(const moveit_msgs::msg:
   }
 }
 
-void PlanningSceneMonitor::collisionObjectFailTFCallback(const moveit_msgs::msg::CollisionObject::SharedPtr obj,
+void PlanningSceneMonitor::collisionObjectFailTFCallback(const moveit_msgs::msg::CollisionObject::SharedPtr& obj,
                                                          tf2_ros::filter_failure_reasons::FilterFailureReason reason)
 {
   // if we just want to remove objects, the frame does not matter
@@ -643,7 +643,7 @@ void PlanningSceneMonitor::collisionObjectFailTFCallback(const moveit_msgs::msg:
     collisionObjectCallback(obj);
 }
 
-void PlanningSceneMonitor::collisionObjectCallback(const moveit_msgs::msg::CollisionObject::SharedPtr obj)
+void PlanningSceneMonitor::collisionObjectCallback(const moveit_msgs::msg::CollisionObject::SharedPtr& obj)
 {
   if (!scene_)
     return;
@@ -1062,22 +1062,21 @@ void PlanningSceneMonitor::startWorldGeometryMonitor(const std::string& collisio
     collision_object_subscriber_.reset();
     if (tf_buffer_)
     {
+      collision_object_subscriber_.reset();
       collision_object_filter_.reset(new tf2_ros::MessageFilter<moveit_msgs::msg::CollisionObject>(
           *collision_object_subscriber_, *tf_buffer_, scene_->getPlanningFrame(), 1024, node_));
-          //TODO (anasarrak): fix the MessageFilter subscriber
-      // collision_object_filter_->registerCallback(boost::bind(&PlanningSceneMonitor::collisionObjectCallback, this, _1));
+      // collision_object_filter_->connectInput(*collision_object_subscriber_);
+      collision_object_filter_->registerCallback(&PlanningSceneMonitor::collisionObjectCallback,this);
+      //TODO (anasarrak): No registerCallback implementation
       // collision_object_filter_->registerFailureCallback(
-      //     boost::bind(&PlanningSceneMonitor::collisionObjectFailTFCallback, this, _1, _2));
-      //TODO: uncomment
-      // RCLCPP_INFO(node_->get_logger(), "Listening to '%s' using message notifier with target frame '%s'",
-      //                collision_object_subscriber_->get_topic_name(),
-      //                collision_object_filter_->getTargetFramesString().c_str());
+      //     std::bind(&PlanningSceneMonitor::collisionObjectFailTFCallback, this, _1, _2));
+      RCLCPP_INFO(node_->get_logger(), "Listening to '%s' using message notifier with target frame '%s'",
+                     collision_object_subscriber_->getTopic(),
+                   collision_object_filter_->getTargetFramesString().c_str());
     }
     else
     {
-      //TODO (anasarrak): fix the subscriber
-      // collision_object_subscriber_->registerCallback(
-      //     boost::bind(&PlanningSceneMonitor::collisionObjectCallback, this, _1));
+      collision_object_subscriber_->registerCallback(&PlanningSceneMonitor::collisionObjectCallback,this);
       RCLCPP_INFO(node_->get_logger(), "Listening to '%s'", collision_objects_topic.c_str());
     }
   }

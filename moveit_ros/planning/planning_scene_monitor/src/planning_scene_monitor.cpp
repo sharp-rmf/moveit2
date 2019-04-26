@@ -1062,7 +1062,6 @@ void PlanningSceneMonitor::startWorldGeometryMonitor(const std::string& collisio
     collision_object_subscriber_.reset();
     if (tf_buffer_)
     {
-      collision_object_subscriber_.reset();
       collision_object_filter_.reset(new tf2_ros::MessageFilter<moveit_msgs::msg::CollisionObject>(
           *collision_object_subscriber_, *tf_buffer_, scene_->getPlanningFrame(), 1024, node_));
       // collision_object_filter_->connectInput(*collision_object_subscriber_);

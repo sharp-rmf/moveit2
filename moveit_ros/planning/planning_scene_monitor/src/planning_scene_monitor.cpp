@@ -135,8 +135,9 @@ PlanningSceneMonitor::PlanningSceneMonitor(const planning_scene::PlanningScenePt
 }
 
 PlanningSceneMonitor::PlanningSceneMonitor(const robot_model_loader::RobotModelLoaderPtr& rm_loader,
+                                           const std::shared_ptr<rclcpp::Node> node,
                                            const std::shared_ptr<tf2_ros::Buffer>& tf_buffer, const std::string& name)
-  : PlanningSceneMonitor(planning_scene::PlanningScenePtr(), rm_loader, tf_buffer, name)
+  : PlanningSceneMonitor(planning_scene::PlanningScenePtr(), rm_loader, node, tf_buffer, name)
 {
 }
 
@@ -155,21 +156,18 @@ PlanningSceneMonitor::PlanningSceneMonitor(const planning_scene::PlanningScenePt
   // needed to replace...
   // spinner_.reset(new ros::AsyncSpinner(1, &queue_));
   // spinner_->start();
-  spinner_->add_node(node_);
-  // TODO (anasarrak): Add a thread to spin, there is no start() method for rclcpp::executors::SingleThreadedExecutor
+  // spinner_->add_node(node_);
+  //TODO (anasarrak): Add a thread to spin, there is no start() method for rclcpp::executors::SingleThreadedExecutor
   // spinner_->spin();
   initialize(scene);
 }
 
 PlanningSceneMonitor::PlanningSceneMonitor(const planning_scene::PlanningScenePtr& scene,
                                            const robot_model_loader::RobotModelLoaderPtr& rm_loader,
-                                           const std::shared_ptr<rclcpp::Node> node,
-                                           const std::shared_ptr<tf2_ros::Buffer>& tf_buffer, const std::string& name)
-  : monitor_name_(name)
-  , node_(node)
-  , tf_buffer_(tf_buffer)
-  , rm_loader_(rm_loader)
-  , shape_transform_cache_lookup_wait_time_(rclcpp::Duration(0, 0))
+                                           std::shared_ptr<rclcpp::Node> node,
+                                           const std::shared_ptr<tf2_ros::Buffer>& tf_buffer,
+                                           const std::string& name)
+  : monitor_name_(name), node_(node), tf_buffer_(tf_buffer), rm_loader_(rm_loader), shape_transform_cache_lookup_wait_time_(rclcpp::Duration(0,0))
 {
   // use same callback queue as root_nh_
   // nh_.setCallbackQueue(root_nh_.getCallbackQueue());

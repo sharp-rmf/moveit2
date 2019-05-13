@@ -157,7 +157,7 @@ void planning_scene_monitor::CurrentStateMonitor::startStateMonitor(const std::s
     }
     state_monitor_started_ = true;
     monitor_start_time_ = ros_clock.now();
-    RCLCPP_DEBUG(node_->get_logger(),"Listening to joint states on topic '%s'", joint_states_topic.c_str());
+    RCLCPP_INFO(node_->get_logger(),"Listening to joint states on topic '%s'", joint_states_topic.c_str());
   }
 }
 
@@ -303,18 +303,20 @@ bool planning_scene_monitor::CurrentStateMonitor::waitForCurrentState(rclcpp::Ti
   std::chrono::duration<double> dur;
 
   std::unique_lock<std::mutex> lock(state_update_lock_);
-  while (current_state_time_ < t)
-  {
-    state_update_condition_.wait_for(lock, std::chrono::nanoseconds(elapsed - timeout));
-    dur = std::chrono::system_clock::now() - start;
-    if (dur > timeout)
-    {
-      RCLCPP_INFO(node_->get_logger(), "Didn't received robot state (joint angles) with recent timestamp within "
-                      "%f seconds.\n"
-                      "Check clock synchronization if your are running ROS across multiple machines!", wait_time);
-      return false;
-    }
-  }
+  // TODO (ahcorde)
+  // while (current_state_time_ < t)
+  // {
+  //   state_update_condition_.wait_for(lock, std::chrono::nanoseconds(elapsed - timeout));
+  //   dur = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - start);
+  //   if (dur > timeout)
+  //   {
+  //     RCLCPP_INFO(node_->get_logger(), "Didn't received robot state (joint angles) with recent timestamp within "
+  //                     "%f seconds.\n"
+  //                     "Check clock synchronization if your are running ROS across multiple machines!", wait_time);
+  //     return false;
+  //   }
+  //   rclcpp::spin_some(node_);
+  // }
   return true;
 }
 
@@ -368,8 +370,7 @@ void planning_scene_monitor::CurrentStateMonitor::jointStateCallback(const senso
   }
   bool update = false;
 
-  {
-    std::unique_lock<std::mutex> _(state_update_lock_);
+    // std::unique_lock<std::mutex> _(state_update_lock_);
     // read the received values, and update their time stamps
     std::size_t n = joint_state->name.size();
     current_state_time_ = joint_state->header.stamp;
@@ -425,7 +426,6 @@ void planning_scene_monitor::CurrentStateMonitor::jointStateCallback(const senso
         }
       }
     }
-  }
 
   // callbacks, if needed
   if (update)

@@ -57,7 +57,7 @@ planning_scene_monitor::CurrentStateMonitor::CurrentStateMonitor(const robot_mod
   , robot_model_(robot_model)
   , robot_state_(robot_model)
   , state_monitor_started_(false)
-  , copy_dynamics_(false)
+  , copy_dynamics_(true)
   , error_(std::numeric_limits<double>::epsilon())
 {
   robot_state_.setToDefaultValues();
@@ -147,7 +147,7 @@ void planning_scene_monitor::CurrentStateMonitor::startStateMonitor(const std::s
     }
     else
       joint_state_subscriber_ = node_->create_subscription<sensor_msgs::msg::JointState>(joint_states_topic,
-                        std::bind(&planning_scene_monitor::CurrentStateMonitor::jointStateCallback, this, std::placeholders::_1));
+                        std::bind(&planning_scene_monitor::CurrentStateMonitor::jointStateCallback, this, std::placeholders::_1), rmw_qos_profile_sensor_data);
     if (tf_buffer_ && !robot_model_->getMultiDOFJointModels().empty())
     {
       //TODO (anasarrak): replace this for the appropiate function, there is no similar
@@ -186,13 +186,13 @@ void planning_scene_monitor::CurrentStateMonitor::stopStateMonitor()
 std::string planning_scene_monitor::CurrentStateMonitor::getMonitoredTopic(const std::string& joint_states_topic)
 {
   std::string result;
-  joint_state_subscriber_ = node_->create_subscription<sensor_msgs::msg::JointState>(joint_states_topic,
-                    std::bind(&planning_scene_monitor::CurrentStateMonitor::jointStateCallback, this, std::placeholders::_1));
+  // joint_state_subscriber_ = node_->create_subscription<sensor_msgs::msg::JointState>(joint_states_topic,
+  //                   std::bind(&planning_scene_monitor::CurrentStateMonitor::jointStateCallback, this, std::placeholders::_1));
   if (joint_state_subscriber_)
     result = joint_state_subscriber_->get_topic_name();
   else
     result = std::string("");
-  joint_state_subscriber_.reset();
+  // joint_state_subscriber_.reset();
   return result;
 }
 

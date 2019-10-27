@@ -51,7 +51,7 @@
 #include <boost/algorithm/string/join.hpp>
 #include <memory>
 
-rclcpp::Logger LOGGER = rclcpp::get_logger("planning_scene_monitor");
+rclcpp::Logger LOGGER_PLANNING_SCENE_MONITOR = rclcpp::get_logger("planning_scene_monitor");
 
 namespace planning_scene_monitor
 {

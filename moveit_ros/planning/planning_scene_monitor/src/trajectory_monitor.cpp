@@ -58,12 +58,14 @@ planning_scene_monitor::TrajectoryMonitor::~TrajectoryMonitor()
 
 void planning_scene_monitor::TrajectoryMonitor::setSamplingFrequency(double sampling_frequency)
 {
-  if (sampling_frequency <= std::numeric_limits<double>::epsilon()){
-    RCLCPP_ERROR(LOGGER_TRAJECTORY_MONITOR,"The sampling frequency for trajectory states should be positive");
-    }
-  else{
+  if (sampling_frequency <= std::numeric_limits<double>::epsilon())
+  {
+    RCLCPP_ERROR(LOGGER_TRAJECTORY_MONITOR, "The sampling frequency for trajectory states should be positive");
+  }
+  else
+  {
     sampling_frequency_ = sampling_frequency;
-    }
+  }
 }
 
 bool planning_scene_monitor::TrajectoryMonitor::isActive() const
@@ -76,7 +78,7 @@ void planning_scene_monitor::TrajectoryMonitor::startTrajectoryMonitor()
   if (sampling_frequency_ > std::numeric_limits<double>::epsilon() && !record_states_thread_)
   {
     record_states_thread_.reset(new boost::thread(boost::bind(&TrajectoryMonitor::recordStates, this)));
-    RCLCPP_DEBUG(LOGGER_TRAJECTORY_MONITOR,"Started trajectory monitor");
+    RCLCPP_DEBUG(LOGGER_TRAJECTORY_MONITOR, "Started trajectory monitor");
   }
 }
 
@@ -87,7 +89,7 @@ void planning_scene_monitor::TrajectoryMonitor::stopTrajectoryMonitor()
     std::unique_ptr<boost::thread> copy;
     copy.swap(record_states_thread_);
     copy->join();
-    RCLCPP_DEBUG(LOGGER_TRAJECTORY_MONITOR,"Stopped trajectory monitor");
+    RCLCPP_DEBUG(LOGGER_TRAJECTORY_MONITOR, "Stopped trajectory monitor");
   }
 }
 

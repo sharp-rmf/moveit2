@@ -142,22 +142,25 @@ void planning_scene_monitor::CurrentStateMonitor::startStateMonitor(const std::s
   if (!state_monitor_started_ && robot_model_)
   {
     joint_time_.clear();
-    if (joint_states_topic.empty()){
+    if (joint_states_topic.empty())
+    {
       RCLCPP_ERROR(node_->get_logger(), " The joint states topic cannot be an empty string");
     }
     else
-      joint_state_subscriber_ = node_->create_subscription<sensor_msgs::msg::JointState>(joint_states_topic,
-                        std::bind(&planning_scene_monitor::CurrentStateMonitor::jointStateCallback, this, std::placeholders::_1), rmw_qos_profile_sensor_data);
+      joint_state_subscriber_ = node_->create_subscription<sensor_msgs::msg::JointState>(
+          joint_states_topic,
+          std::bind(&planning_scene_monitor::CurrentStateMonitor::jointStateCallback, this, std::placeholders::_1),
+          rmw_qos_profile_sensor_data);
     if (tf_buffer_ && !robot_model_->getMultiDOFJointModels().empty())
     {
-      //TODO (anasarrak): replace this for the appropiate function, there is no similar
-      //function in ros2/geometry2.
+      // TODO (anasarrak): replace this for the appropiate function, there is no similar
+      // function in ros2/geometry2.
       // tf_connection_.reset(new TFConnection(
       //     tf_buffer_->_addTransformsChangedListener(std::bind(&CurrentStateMonitor::tfCallback, this))));
     }
     state_monitor_started_ = true;
     monitor_start_time_ = ros_clock.now();
-    RCLCPP_INFO(node_->get_logger(),"Listening to joint states on topic '%s'", joint_states_topic.c_str());
+    RCLCPP_INFO(node_->get_logger(), "Listening to joint states on topic '%s'", joint_states_topic.c_str());
   }
 }
 
@@ -173,12 +176,12 @@ void planning_scene_monitor::CurrentStateMonitor::stopStateMonitor()
     joint_state_subscriber_.reset();
     if (tf_buffer_ && tf_connection_)
     {
-      //TODO (anasarrak): replace this for the appropiate function, there is no similar
-      //function in ros2/geometry2.
+      // TODO (anasarrak): replace this for the appropiate function, there is no similar
+      // function in ros2/geometry2.
       // tf_buffer_->_removeTransformsChangedListener(*tf_connection_);
       tf_connection_.reset();
     }
-    RCLCPP_DEBUG(node_->get_logger(),"No longer listening for joint states");
+    RCLCPP_DEBUG(node_->get_logger(), "No longer listening for joint states");
     state_monitor_started_ = false;
   }
 }
@@ -187,7 +190,8 @@ std::string planning_scene_monitor::CurrentStateMonitor::getMonitoredTopic(const
 {
   std::string result;
   // joint_state_subscriber_ = node_->create_subscription<sensor_msgs::msg::JointState>(joint_states_topic,
-  //                   std::bind(&planning_scene_monitor::CurrentStateMonitor::jointStateCallback, this, std::placeholders::_1));
+  //                   std::bind(&planning_scene_monitor::CurrentStateMonitor::jointStateCallback, this,
+  //                   std::placeholders::_1));
   if (joint_state_subscriber_)
     result = joint_state_subscriber_->get_topic_name();
   else
@@ -206,7 +210,7 @@ bool planning_scene_monitor::CurrentStateMonitor::haveCompleteState() const
     {
       if (!joint->isPassive() && !joint->getMimic())
       {
-        RCLCPP_DEBUG(node_->get_logger(),"Joint '%s' has never been updated", joint->getName().c_str());
+        RCLCPP_DEBUG(node_->get_logger(), "Joint '%s' has never been updated", joint->getName().c_str());
         result = false;
       }
     }
@@ -243,13 +247,14 @@ bool planning_scene_monitor::CurrentStateMonitor::haveCompleteState(const rclcpp
     std::map<const moveit::core::JointModel*, rclcpp::Time>::const_iterator it = joint_time_.find(joint);
     if (it == joint_time_.end())
     {
-      RCLCPP_DEBUG(node_->get_logger(),"Joint '%s' has never been updated", joint->getName().c_str());
+      RCLCPP_DEBUG(node_->get_logger(), "Joint '%s' has never been updated", joint->getName().c_str());
       result = false;
     }
     else if (it->second < old)
     {
-      RCLCPP_DEBUG(node_->get_logger(),"Joint '%s' was last updated %0.3lf seconds ago (older than the allowed %0.3lf seconds)",
-                joint->getName().c_str(), (now - it->second).seconds() , age.seconds());
+      RCLCPP_DEBUG(node_->get_logger(),
+                   "Joint '%s' was last updated %0.3lf seconds ago (older than the allowed %0.3lf seconds)",
+                   joint->getName().c_str(), (now - it->second).seconds(), age.seconds());
       result = false;
     }
   }
@@ -272,14 +277,15 @@ bool planning_scene_monitor::CurrentStateMonitor::haveCompleteState(const rclcpp
     std::map<const moveit::core::JointModel*, rclcpp::Time>::const_iterator it = joint_time_.find(joint);
     if (it == joint_time_.end())
     {
-      RCLCPP_DEBUG(node_->get_logger(),"Joint '%s' has never been updated", joint->getName().c_str());
+      RCLCPP_DEBUG(node_->get_logger(), "Joint '%s' has never been updated", joint->getName().c_str());
       missing_states.push_back(joint->getName());
       result = false;
     }
     else if (it->second < old)
     {
-      RCLCPP_DEBUG(node_->get_logger(),"Joint '%s' was last updated %0.3lf seconds ago (older than the allowed %0.3lf seconds)",
-                joint->getName().c_str(), (now - it->second).seconds() , age.seconds());
+      RCLCPP_DEBUG(node_->get_logger(),
+                   "Joint '%s' was last updated %0.3lf seconds ago (older than the allowed %0.3lf seconds)",
+                   joint->getName().c_str(), (now - it->second).seconds(), age.seconds());
       missing_states.push_back(joint->getName());
       result = false;
     }
@@ -360,72 +366,71 @@ bool planning_scene_monitor::CurrentStateMonitor::waitForCompleteState(const std
   return ok;
 }
 
-void planning_scene_monitor::CurrentStateMonitor::jointStateCallback(const sensor_msgs::msg::JointState::SharedPtr joint_state)
+void planning_scene_monitor::CurrentStateMonitor::jointStateCallback(
+    const sensor_msgs::msg::JointState::SharedPtr joint_state)
 {
   if (joint_state->name.size() != joint_state->position.size())
   {
-    RCUTILS_LOG_ERROR_THROTTLE(RCUTILS_STEADY_TIME, 1, "State monitor received invalid joint state (number of joint names does not match number of "
-                          "positions)");
+    RCUTILS_LOG_ERROR_THROTTLE(
+        RCUTILS_STEADY_TIME, 1,
+        "State monitor received invalid joint state (number of joint names does not match number of "
+        "positions)");
     return;
   }
   bool update = false;
 
-    // std::unique_lock<std::mutex> _(state_update_lock_);
-    // read the received values, and update their time stamps
-    std::size_t n = joint_state->name.size();
-    current_state_time_ = joint_state->header.stamp;
-    for (std::size_t i = 0; i < n; ++i)
+  // std::unique_lock<std::mutex> _(state_update_lock_);
+  // read the received values, and update their time stamps
+  std::size_t n = joint_state->name.size();
+  current_state_time_ = joint_state->header.stamp;
+  for (std::size_t i = 0; i < n; ++i)
+  {
+    const moveit::core::JointModel* jm = robot_model_->getJointModel(joint_state->name[i]);
+    if (!jm)
+      continue;
+    // ignore fixed joints, multi-dof joints (they should not even be in the message)
+    if (jm->getVariableCount() != 1)
+      continue;
+
+    joint_time_[jm] = joint_state->header.stamp;
+
+    if (robot_state_.getJointPositions(jm)[0] != joint_state->position[i])
     {
-      const moveit::core::JointModel* jm = robot_model_->getJointModel(joint_state->name[i]);
-      if (!jm)
-        continue;
-      // ignore fixed joints, multi-dof joints (they should not even be in the message)
-      if (jm->getVariableCount() != 1)
-        continue;
-
-      joint_time_[jm] = joint_state->header.stamp;
-
-      if (robot_state_.getJointPositions(jm)[0] != joint_state->position[i])
-      {
-        update = true;
-        robot_state_.setJointPositions(jm, &(joint_state->position[i]));
-
-        // continuous joints wrap, so we don't modify them (even if they are outside bounds!)
-        if (jm->getType() == moveit::core::JointModel::REVOLUTE)
-          if (static_cast<const moveit::core::RevoluteJointModel*>(jm)->isContinuous())
-            continue;
-
-        const robot_model::VariableBounds& b =
-            jm->getVariableBounds()[0];  // only one variable in the joint, so we get its bounds
-
-        // if the read variable is 'almost' within bounds (up to error_ difference), then consider it to be within
-        // bounds
-        if (joint_state->position[i] < b.min_position_ && joint_state->position[i] >= b.min_position_ - error_)
-          robot_state_.setJointPositions(jm, &b.min_position_);
-        else if (joint_state->position[i] > b.max_position_ && joint_state->position[i] <= b.max_position_ + error_)
-          robot_state_.setJointPositions(jm, &b.max_position_);
-      }
+      update = true;
+      robot_state_.setJointPositions(jm, &(joint_state->position[i]));
 
       // optionally copy velocities and effort
       if (copy_dynamics_)
       {
-        // update joint velocities
-        if (joint_state->name.size() == joint_state->velocity.size() &&
-            robot_state_.getJointVelocities(jm)[0] != joint_state->velocity[i])
+        // check if velocities exist
+        if (joint_state->name.size() == joint_state->velocity.size())
         {
-          update = true;
           robot_state_.setJointVelocities(jm, &(joint_state->velocity[i]));
-        }
 
-        // update joint efforts
-        if (joint_state->name.size() == joint_state->effort.size() &&
-            robot_state_.getJointEffort(jm)[0] != joint_state->effort[i])
-        {
-          update = true;
-          robot_state_.setJointEfforts(jm, &(joint_state->effort[i]));
+          // check if effort exist. assume they are not useful if no velocities were passed in
+          if (joint_state->name.size() == joint_state->effort.size())
+          {
+            robot_state_.setJointEfforts(jm, &(joint_state->effort[i]));
+          }
         }
       }
+
+      // continuous joints wrap, so we don't modify them (even if they are outside bounds!)
+      if (jm->getType() == moveit::core::JointModel::REVOLUTE)
+        if (static_cast<const moveit::core::RevoluteJointModel*>(jm)->isContinuous())
+          continue;
+
+      const robot_model::VariableBounds& b =
+          jm->getVariableBounds()[0];  // only one variable in the joint, so we get its bounds
+
+      // if the read variable is 'almost' within bounds (up to error_ difference), then consider it to be within
+      // bounds
+      if (joint_state->position[i] < b.min_position_ && joint_state->position[i] >= b.min_position_ - error_)
+        robot_state_.setJointPositions(jm, &b.min_position_);
+      else if (joint_state->position[i] > b.max_position_ && joint_state->position[i] <= b.max_position_ + error_)
+        robot_state_.setJointPositions(jm, &b.max_position_);
     }
+  }
 
   // callbacks, if needed
   if (update)
@@ -464,8 +469,9 @@ void planning_scene_monitor::CurrentStateMonitor::tfCallback()
       catch (tf2::TransformException& ex)
       {
         RCLCPP_WARN_ONCE(node_->get_logger(), "Unable to update multi-DOF joint '%s':"
-                              "Failure to lookup transform between '%s'"
-                              "and '%s' with TF exception: ", joint->getName().c_str(), parent_frame.c_str(), child_frame.c_str(), ex.what());
+                                              "Failure to lookup transform between '%s'"
+                                              "and '%s' with TF exception: ",
+                         joint->getName().c_str(), parent_frame.c_str(), child_frame.c_str(), ex.what());
         continue;
       }
 

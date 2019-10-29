@@ -120,19 +120,17 @@ const std::string PlanningSceneMonitor::DEFAULT_PLANNING_SCENE_TOPIC = "planning
 const std::string PlanningSceneMonitor::DEFAULT_PLANNING_SCENE_SERVICE = "get_planning_scene";
 const std::string PlanningSceneMonitor::MONITORED_PLANNING_SCENE_TOPIC = "monitored_planning_scene";
 
-PlanningSceneMonitor::PlanningSceneMonitor(const std::string& robot_description,
-                                           std::shared_ptr<rclcpp::Node>& node,
+PlanningSceneMonitor::PlanningSceneMonitor(const std::string& robot_description, std::shared_ptr<rclcpp::Node>& node,
                                            const std::shared_ptr<tf2_ros::Buffer>& tf_buffer, const std::string& name)
   : PlanningSceneMonitor(planning_scene::PlanningScenePtr(), robot_description, node, tf_buffer, name)
 {
 }
 
 PlanningSceneMonitor::PlanningSceneMonitor(const planning_scene::PlanningScenePtr& scene,
-                                           const std::string& robot_description,
-                                           std::shared_ptr<rclcpp::Node>& node,
+                                           const std::string& robot_description, std::shared_ptr<rclcpp::Node>& node,
                                            const std::shared_ptr<tf2_ros::Buffer>& tf_buffer, const std::string& name)
-  : PlanningSceneMonitor(scene, std::make_shared<robot_model_loader::RobotModelLoader>(robot_description, node), node, tf_buffer,
-                         name)
+  : PlanningSceneMonitor(scene, std::make_shared<robot_model_loader::RobotModelLoader>(robot_description, node), node,
+                         tf_buffer, name)
 {
 }
 
@@ -146,9 +144,12 @@ PlanningSceneMonitor::PlanningSceneMonitor(const robot_model_loader::RobotModelL
 PlanningSceneMonitor::PlanningSceneMonitor(const planning_scene::PlanningScenePtr& scene,
                                            const robot_model_loader::RobotModelLoaderPtr& rm_loader,
                                            std::shared_ptr<rclcpp::Node>& node,
-                                           const std::shared_ptr<tf2_ros::Buffer>& tf_buffer,
-                                           const std::string& name)
-  : monitor_name_(name), node_(node), tf_buffer_(tf_buffer), rm_loader_(rm_loader), shape_transform_cache_lookup_wait_time_(rclcpp::Duration(0,0))
+                                           const std::shared_ptr<tf2_ros::Buffer>& tf_buffer, const std::string& name)
+  : monitor_name_(name)
+  , node_(node)
+  , tf_buffer_(tf_buffer)
+  , rm_loader_(rm_loader)
+  , shape_transform_cache_lookup_wait_time_(rclcpp::Duration(0, 0))
 {
   // use same callback queue as root_nh_
   // nh_.setCallbackQueue(root_nh_.getCallbackQueue());
@@ -1161,7 +1162,7 @@ void PlanningSceneMonitor::stopStateMonitor()
 {
   if (current_state_monitor_)
     current_state_monitor_->stopStateMonitor();
-  //TODO (ahcorde):
+  // TODO (ahcorde):
   // if (attached_collision_object_subscriber_)
   //   attached_collision_object_subscriber_.reset();
 

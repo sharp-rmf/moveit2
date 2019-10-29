@@ -48,7 +48,6 @@
 
 namespace planning_scene_monitor
 {
-
 typedef std::function<void(const sensor_msgs::msg::JointState::ConstPtr& joint_state)> JointStateUpdateCallback;
 
 /** @class CurrentStateMonitor

@@ -542,7 +542,7 @@ private:
 
   /// the amount of time to wait in between updates to the robot state
   // This field is protected by state_pending_mutex_
-  std::chrono::duration<double> dt_state_update_;
+  rclcpp::Duration dt_state_update_;
 
   /// the amount of time to wait when looking up transforms
   // Setting this to a non-zero value resolves issues when the sensor data is

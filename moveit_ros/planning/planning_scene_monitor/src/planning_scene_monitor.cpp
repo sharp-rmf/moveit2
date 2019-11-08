@@ -51,6 +51,8 @@
 #include <boost/algorithm/string/join.hpp>
 #include <memory>
 
+#include <std_msgs/msg/string.hpp>
+
 rclcpp::Logger LOGGER_PLANNING_SCENE_MONITOR = rclcpp::get_logger("planning_scene_monitor");
 
 namespace planning_scene_monitor
@@ -1136,8 +1138,8 @@ void PlanningSceneMonitor::startStateMonitor(const std::string& joint_states_top
 
     {
       boost::mutex::scoped_lock lock(state_pending_mutex_);
-      auto period = std::chrono::milliseconds(int(dt_state_update_.count() * 1000));
-      if (dt_state_update_.count() > 0)
+      auto period = dt_state_update_.to_chrono<std::chrono::milliseconds>();
+      if (dt_state_update_.seconds() > 0)
         // Internal implementation to instanciate the start walltimer
         // http://docs.ros.org/indigo/api/roscpp/html/wall__timer_8cpp_source.html
         // state_update_timer_.start();
@@ -1186,7 +1188,7 @@ void PlanningSceneMonitor::onStateUpdate(const sensor_msgs::msg::JointState::Con
   {
     boost::mutex::scoped_lock lock(state_pending_mutex_);
 
-    if (dt.count() < dt_state_update_.count())
+    if (dt.count() < dt_state_update_.seconds())
     {
       state_update_pending_ = true;
     }
@@ -1214,7 +1216,7 @@ void PlanningSceneMonitor::stateUpdateTimerCallback(/*const ros::WallTimerEvent&
     {
       // lock for access to dt_state_update_ and state_update_pending_
       boost::mutex::scoped_lock lock(state_pending_mutex_);
-      if (state_update_pending_ && dt >= dt_state_update_)
+      if (state_update_pending_ && dt.count() >= dt_state_update_.seconds())
       {
         state_update_pending_ = false;
         last_robot_state_update_wall_time_ = std::chrono::system_clock::now();
@@ -1267,7 +1269,7 @@ void PlanningSceneMonitor::setStateUpdateFrequency(double hz)
     // state_update_timer_.setPeriod(dt_state_update_.count());
     // state_update_timer_.start();
     // TODO(anasarrak): review these walltimer changes
-    auto period = std::chrono::milliseconds(int(dt_state_update_.count() * 1000));
+    auto period = dt_state_update_.to_chrono<std::chrono::milliseconds>();
     state_update_timer_ =
         node_->create_wall_timer(period, std::bind(&PlanningSceneMonitor::stateUpdateTimerCallback, this));
   }
@@ -1283,7 +1285,7 @@ void PlanningSceneMonitor::setStateUpdateFrequency(double hz)
       update = true;
   }
   RCLCPP_INFO(node_->get_logger(), "Updating internal planning scene state at most every %lf seconds",
-              dt_state_update_.count());
+              dt_state_update_.seconds());
 
   if (update)
     updateSceneWithCurrentState();

@@ -42,7 +42,7 @@
 static const std::string ROBOT_DESCRIPTION = "robot_description";
 
 bool shutdown_req = false;
-std::shared_ptr<rclcpp::Node> node;
+rclcpp::Node::SharedPtr node;
 
 void signalHandler(int signum)
 {

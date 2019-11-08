@@ -57,21 +57,13 @@ class CurrentStateMonitor
   typedef boost::signals2::connection TFConnection;
 
 public:
-  /**
-   * @brief Constructor.
-   * @param robot_model The current kinematic model to build on
-   * @param tf_buffer A pointer to the tf2_ros Buffer to use
-   */
-  CurrentStateMonitor(const robot_model::RobotModelConstPtr& robot_model,
-                      const std::shared_ptr<tf2_ros::Buffer>& tf_buffer);
-
   /** @brief Constructor.
+   *  @param node A shared_ptr to a node used for subscription to joint_states_topic
    *  @param robot_model The current kinematic model to build on
    *  @param tf_buffer A pointer to the tf2_ros Buffer to use
-   *  @param nh A ros::NodeHandle to pass node specific options
    */
-  CurrentStateMonitor(const robot_model::RobotModelConstPtr& robot_model,
-                      const std::shared_ptr<tf2_ros::Buffer>& tf_buffer, const std::shared_ptr<rclcpp::Node> node);
+  CurrentStateMonitor(const rclcpp::Node::SharedPtr& node, const robot_model::RobotModelConstPtr& robot_model,
+                      const std::shared_ptr<tf2_ros::Buffer>& tf_buffer);
 
   ~CurrentStateMonitor();
 
@@ -193,8 +185,7 @@ private:
   void jointStateCallback(const sensor_msgs::msg::JointState::SharedPtr joint_state);
   void tfCallback();
 
-  // ros::NodeHandle nh_;
-  rclcpp::Node::SharedPtr node;
+  std::shared_ptr<rclcpp::Node> node_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   robot_model::RobotModelConstPtr robot_model_;
   robot_state::RobotState robot_state_;
@@ -210,8 +201,6 @@ private:
   std::vector<JointStateUpdateCallback> update_callbacks_;
 
   std::shared_ptr<TFConnection> tf_connection_;
-
-  std::shared_ptr<rclcpp::Node> node_;
 
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_subscriber_;
 };

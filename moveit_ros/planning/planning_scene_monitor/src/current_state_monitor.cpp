@@ -43,15 +43,9 @@
 
 rclcpp::Logger logger = rclcpp::get_logger("planning_scene_monitor");
 
-planning_scene_monitor::CurrentStateMonitor::CurrentStateMonitor(const robot_model::RobotModelConstPtr& robot_model,
+planning_scene_monitor::CurrentStateMonitor::CurrentStateMonitor(const rclcpp::Node::SharedPtr& node,
+                                                                 const robot_model::RobotModelConstPtr& robot_model,
                                                                  const std::shared_ptr<tf2_ros::Buffer>& tf_buffer)
-  : CurrentStateMonitor(robot_model, tf_buffer, node)
-{
-}
-
-planning_scene_monitor::CurrentStateMonitor::CurrentStateMonitor(const robot_model::RobotModelConstPtr& robot_model,
-                                                                 const std::shared_ptr<tf2_ros::Buffer>& tf_buffer,
-                                                                 const std::shared_ptr<rclcpp::Node> node)
   : node_(node)
   , tf_buffer_(tf_buffer)
   , robot_model_(robot_model)

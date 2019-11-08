@@ -39,20 +39,15 @@
 
 #include "rclcpp/rclcpp.hpp"
 
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("demo_scene");
+
 static const std::string ROBOT_DESCRIPTION = "robot_description";
 
-bool shutdown_req = false;
 rclcpp::Node::SharedPtr node;
-
-void signalHandler(int signum)
-{
-  shutdown_req = true;
-}
 
 void sendKnife()
 {
-  auto pub_aco = node->create_publisher<moveit_msgs::msg::AttachedCollisionObject>("attached_collision_object",
-                                                                                   rmw_qos_profile_default);
+  auto pub_aco = node->create_publisher<moveit_msgs::msg::AttachedCollisionObject>("attached_collision_object");
   rclcpp::Clock clock;
   moveit_msgs::msg::AttachedCollisionObject aco;
   aco.link_name = "r_wrist_roll_link";
@@ -89,24 +84,18 @@ void sendKnife()
   sleep(1);
   pub_aco->publish(aco);
 
-  RCLCPP_INFO(node->get_logger(), "Object published.");
+  RCLCPP_INFO(LOGGER, "Object published.");
   rclcpp::sleep_for(std::chrono::milliseconds(1500));
 }
 
 int main(int argc, char** argv)
 {
-  signal(SIGINT, signalHandler);
-
   rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor executor;
 
   node = rclcpp::Node::make_shared("demo");
 
-  while (!shutdown_req)
-  {
-    sendKnife();
-    executor.spin_node_some(node);
-  }
+  sendKnife();
+  rclcpp::spin(node);
 
   return 0;
 }

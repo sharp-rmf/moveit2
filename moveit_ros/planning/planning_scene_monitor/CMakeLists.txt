@@ -18,9 +18,6 @@ ament_target_dependencies(${MOVEIT_LIB_NAME}
   Boost
   moveit_msgs
 )
-target_link_libraries(${MOVEIT_LIB_NAME}
-  moveit_robot_model_loader
-)
 
 add_executable(demo_scene demos/demo_scene.cpp)
 ament_target_dependencies(demo_scene

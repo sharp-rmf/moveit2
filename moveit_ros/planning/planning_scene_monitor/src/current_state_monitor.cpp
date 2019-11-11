@@ -182,16 +182,13 @@ void CurrentStateMonitor::stopStateMonitor()
 
 std::string CurrentStateMonitor::getMonitoredTopic(const std::string& joint_states_topic)
 {
-  std::string result;
   // joint_state_subscriber_ = node_->create_subscription<sensor_msgs::msg::JointState>(joint_states_topic,
   //                   std::bind(& CurrentStateMonitor::jointStateCallback, this,
   //                   std::placeholders::_1));
   if (joint_state_subscriber_)
-    result = joint_state_subscriber_->get_topic_name();
-  else
-    result = std::string("");
+    return joint_state_subscriber_->get_topic_name();
   // joint_state_subscriber_.reset();
-  return result;
+  return {};
 }
 
 bool CurrentStateMonitor::haveCompleteState() const

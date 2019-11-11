@@ -281,36 +281,28 @@ bool CurrentStateMonitor::haveCompleteState(const rclcpp::Duration& age, std::ve
   return result;
 }
 
-bool CurrentStateMonitor::waitForCurrentState(rclcpp::Time t, double wait_time) const
+bool CurrentStateMonitor::waitForCurrentState(const rclcpp::Time& t, double wait_time) const
 {
-  rclcpp::Clock ros_clock;
-  t = ros_clock.now();
+  rclcpp::Clock clock;
+  rclcpp::Time start = clock.now();
 
-  auto start = std::chrono::system_clock::now();
-
-  auto durElapsed = std::chrono::duration<double>(0.0);
-  auto durTimeout = std::chrono::duration<double>(wait_time);
-
-  auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(durElapsed);
-  auto timeout = std::chrono::duration_cast<std::chrono::seconds>(durTimeout);
-
-  std::chrono::duration<double> dur;
+  rclcpp::Duration elapsed(0, 0);
+  rclcpp::Duration timeout(wait_time, 0);
 
   std::unique_lock<std::mutex> lock(state_update_lock_);
-  // TODO (ahcorde)
-  // while (current_state_time_ < t)
-  // {
-  //   state_update_condition_.wait_for(lock, std::chrono::nanoseconds(elapsed - timeout));
-  //   dur = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - start);
-  //   if (dur > timeout)
-  //   {
-  //     RCLCPP_INFO( LOGGER, "Didn't received robot state (joint angles) with recent timestamp within "
-  //                     "%f seconds.\n"
-  //                     "Check clock synchronization if your are running ROS across multiple machines!", wait_time);
-  //     return false;
-  //   }
-  //   rclcpp::spin_some(node_);
-  // }
+  while (current_state_time_ < t)
+  {
+    state_update_condition_.wait_for(lock, (elapsed - timeout).to_chrono<std::chrono::nanoseconds>());
+    elapsed = clock.now() - start;
+    if (elapsed > timeout)
+    {
+      RCLCPP_INFO(LOGGER, "Didn't received robot state (joint angles) with recent timestamp within "
+                          "%f seconds.\n"
+                          "Check clock synchronization if your are running ROS across multiple machines!",
+                  wait_time);
+      return false;
+    }
+  }
   return true;
 }
 

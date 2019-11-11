@@ -53,7 +53,7 @@ CurrentStateMonitor::CurrentStateMonitor(const rclcpp::Node::SharedPtr& node,
   , robot_model_(robot_model)
   , robot_state_(robot_model)
   , state_monitor_started_(false)
-  , copy_dynamics_(true)
+  , copy_dynamics_(false)
   , error_(std::numeric_limits<double>::epsilon())
 {
   robot_state_.setToDefaultValues();

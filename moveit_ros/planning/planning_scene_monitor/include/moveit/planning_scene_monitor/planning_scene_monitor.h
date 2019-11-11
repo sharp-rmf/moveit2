@@ -304,7 +304,7 @@ public:
   void setStateUpdateFrequency(double hz);
 
   /** @brief Get the maximum frequency (Hz) at which the current state of the planning scene is updated.*/
-  double getStateUpdateFrequency()
+  double getStateUpdateFrequency() const
   {
     auto t = dt_state_update_.count();
     if (t == 0)

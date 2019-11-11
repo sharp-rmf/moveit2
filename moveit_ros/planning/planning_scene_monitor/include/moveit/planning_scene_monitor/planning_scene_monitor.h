@@ -306,8 +306,8 @@ public:
   /** @brief Get the maximum frequency (Hz) at which the current state of the planning scene is updated.*/
   double getStateUpdateFrequency() const
   {
-    auto t = dt_state_update_.count();
-    if (t == 0)
+    double t = dt_state_update_.seconds();
+    if (t != 0)
       return 1.0 / t;
     else
       return 0.0;

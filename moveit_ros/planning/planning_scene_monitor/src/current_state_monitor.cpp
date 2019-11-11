@@ -43,7 +43,7 @@
 
 namespace planning_scene_monitor
 {
-rclcpp::Logger logger = rclcpp::get_logger("planning_scene_monitor");
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("moveit_ros.current_state_monitor");
 
 CurrentStateMonitor::CurrentStateMonitor(const rclcpp::Node::SharedPtr& node,
                                          const robot_model::RobotModelConstPtr& robot_model,
@@ -139,7 +139,7 @@ void CurrentStateMonitor::startStateMonitor(const std::string& joint_states_topi
     joint_time_.clear();
     if (joint_states_topic.empty())
     {
-      RCLCPP_ERROR(node_->get_logger(), " The joint states topic cannot be an empty string");
+      RCLCPP_ERROR(LOGGER, "The joint states topic cannot be an empty string");
     }
     else
       joint_state_subscriber_ = node_->create_subscription<sensor_msgs::msg::JointState>(
@@ -154,7 +154,7 @@ void CurrentStateMonitor::startStateMonitor(const std::string& joint_states_topi
     }
     state_monitor_started_ = true;
     monitor_start_time_ = ros_clock.now();
-    RCLCPP_INFO(node_->get_logger(), "Listening to joint states on topic '%s'", joint_states_topic.c_str());
+    RCLCPP_INFO(LOGGER, "Listening to joint states on topic '%s'", joint_states_topic.c_str());
   }
 }
 
@@ -175,7 +175,7 @@ void CurrentStateMonitor::stopStateMonitor()
       // tf_buffer_->_removeTransformsChangedListener(*tf_connection_);
       tf_connection_.reset();
     }
-    RCLCPP_DEBUG(node_->get_logger(), "No longer listening for joint states");
+    RCLCPP_DEBUG(LOGGER, "No longer listening for joint states");
     state_monitor_started_ = false;
   }
 }
@@ -204,7 +204,7 @@ bool CurrentStateMonitor::haveCompleteState() const
     {
       if (!joint->isPassive() && !joint->getMimic())
       {
-        RCLCPP_DEBUG(node_->get_logger(), "Joint '%s' has never been updated", joint->getName().c_str());
+        RCLCPP_DEBUG(LOGGER, "Joint '%s' has never been updated", joint->getName().c_str());
         result = false;
       }
     }
@@ -241,13 +241,12 @@ bool CurrentStateMonitor::haveCompleteState(const rclcpp::Duration& age) const
     std::map<const moveit::core::JointModel*, rclcpp::Time>::const_iterator it = joint_time_.find(joint);
     if (it == joint_time_.end())
     {
-      RCLCPP_DEBUG(node_->get_logger(), "Joint '%s' has never been updated", joint->getName().c_str());
+      RCLCPP_DEBUG(LOGGER, "Joint '%s' has never been updated", joint->getName().c_str());
       result = false;
     }
     else if (it->second < old)
     {
-      RCLCPP_DEBUG(node_->get_logger(),
-                   "Joint '%s' was last updated %0.3lf seconds ago (older than the allowed %0.3lf seconds)",
+      RCLCPP_DEBUG(LOGGER, "Joint '%s' was last updated %0.3lf seconds ago (older than the allowed %0.3lf seconds)",
                    joint->getName().c_str(), (now - it->second).seconds(), age.seconds());
       result = false;
     }
@@ -270,14 +269,13 @@ bool CurrentStateMonitor::haveCompleteState(const rclcpp::Duration& age, std::ve
     std::map<const moveit::core::JointModel*, rclcpp::Time>::const_iterator it = joint_time_.find(joint);
     if (it == joint_time_.end())
     {
-      RCLCPP_DEBUG(node_->get_logger(), "Joint '%s' has never been updated", joint->getName().c_str());
+      RCLCPP_DEBUG(LOGGER, "Joint '%s' has never been updated", joint->getName().c_str());
       missing_states.push_back(joint->getName());
       result = false;
     }
     else if (it->second < old)
     {
-      RCLCPP_DEBUG(node_->get_logger(),
-                   "Joint '%s' was last updated %0.3lf seconds ago (older than the allowed %0.3lf seconds)",
+      RCLCPP_DEBUG(LOGGER, "Joint '%s' was last updated %0.3lf seconds ago (older than the allowed %0.3lf seconds)",
                    joint->getName().c_str(), (now - it->second).seconds(), age.seconds());
       missing_states.push_back(joint->getName());
       result = false;
@@ -309,7 +307,7 @@ bool CurrentStateMonitor::waitForCurrentState(rclcpp::Time t, double wait_time) 
   //   dur = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - start);
   //   if (dur > timeout)
   //   {
-  //     RCLCPP_INFO(node_->get_logger(), "Didn't received robot state (joint angles) with recent timestamp within "
+  //     RCLCPP_INFO( LOGGER, "Didn't received robot state (joint angles) with recent timestamp within "
   //                     "%f seconds.\n"
   //                     "Check clock synchronization if your are running ROS across multiple machines!", wait_time);
   //     return false;
@@ -460,9 +458,9 @@ void CurrentStateMonitor::tfCallback()
       }
       catch (tf2::TransformException& ex)
       {
-        RCLCPP_WARN_ONCE(node_->get_logger(), "Unable to update multi-DOF joint '%s':"
-                                              "Failure to lookup transform between '%s'"
-                                              "and '%s' with TF exception: ",
+        RCLCPP_WARN_ONCE(LOGGER, "Unable to update multi-DOF joint '%s':"
+                                 "Failure to lookup transform between '%s'"
+                                 "and '%s' with TF exception: ",
                          joint->getName().c_str(), parent_frame.c_str(), child_frame.c_str(), ex.what());
         continue;
       }

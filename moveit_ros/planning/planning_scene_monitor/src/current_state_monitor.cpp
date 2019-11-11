@@ -41,11 +41,13 @@
 
 #include <limits>
 
+namespace planning_scene_monitor
+{
 rclcpp::Logger logger = rclcpp::get_logger("planning_scene_monitor");
 
-planning_scene_monitor::CurrentStateMonitor::CurrentStateMonitor(const rclcpp::Node::SharedPtr& node,
-                                                                 const robot_model::RobotModelConstPtr& robot_model,
-                                                                 const std::shared_ptr<tf2_ros::Buffer>& tf_buffer)
+CurrentStateMonitor::CurrentStateMonitor(const rclcpp::Node::SharedPtr& node,
+                                         const robot_model::RobotModelConstPtr& robot_model,
+                                         const std::shared_ptr<tf2_ros::Buffer>& tf_buffer)
   : node_(node)
   , tf_buffer_(tf_buffer)
   , robot_model_(robot_model)
@@ -57,33 +59,32 @@ planning_scene_monitor::CurrentStateMonitor::CurrentStateMonitor(const rclcpp::N
   robot_state_.setToDefaultValues();
 }
 
-planning_scene_monitor::CurrentStateMonitor::~CurrentStateMonitor()
+CurrentStateMonitor::~CurrentStateMonitor()
 {
   stopStateMonitor();
 }
 
-robot_state::RobotStatePtr planning_scene_monitor::CurrentStateMonitor::getCurrentState() const
+robot_state::RobotStatePtr CurrentStateMonitor::getCurrentState() const
 {
   std::unique_lock<std::mutex> slock(state_update_lock_);
   robot_state::RobotState* result = new robot_state::RobotState(robot_state_);
   return robot_state::RobotStatePtr(result);
 }
 
-rclcpp::Time planning_scene_monitor::CurrentStateMonitor::getCurrentStateTime() const
+rclcpp::Time CurrentStateMonitor::getCurrentStateTime() const
 {
   std::unique_lock<std::mutex> slock(state_update_lock_);
   return current_state_time_;
 }
 
-std::pair<robot_state::RobotStatePtr, rclcpp::Time>
-planning_scene_monitor::CurrentStateMonitor::getCurrentStateAndTime() const
+std::pair<robot_state::RobotStatePtr, rclcpp::Time> CurrentStateMonitor::getCurrentStateAndTime() const
 {
   std::unique_lock<std::mutex> slock(state_update_lock_);
   robot_state::RobotState* result = new robot_state::RobotState(robot_state_);
   return std::make_pair(robot_state::RobotStatePtr(result), current_state_time_);
 }
 
-std::map<std::string, double> planning_scene_monitor::CurrentStateMonitor::getCurrentStateValues() const
+std::map<std::string, double> CurrentStateMonitor::getCurrentStateValues() const
 {
   std::map<std::string, double> m;
   std::unique_lock<std::mutex> slock(state_update_lock_);
@@ -94,7 +95,7 @@ std::map<std::string, double> planning_scene_monitor::CurrentStateMonitor::getCu
   return m;
 }
 
-void planning_scene_monitor::CurrentStateMonitor::setToCurrentState(robot_state::RobotState& upd) const
+void CurrentStateMonitor::setToCurrentState(robot_state::RobotState& upd) const
 {
   std::unique_lock<std::mutex> slock(state_update_lock_);
   const double* pos = robot_state_.getVariablePositions();
@@ -119,18 +120,18 @@ void planning_scene_monitor::CurrentStateMonitor::setToCurrentState(robot_state:
   }
 }
 
-void planning_scene_monitor::CurrentStateMonitor::addUpdateCallback(const JointStateUpdateCallback& fn)
+void CurrentStateMonitor::addUpdateCallback(const JointStateUpdateCallback& fn)
 {
   if (fn)
     update_callbacks_.push_back(fn);
 }
 
-void planning_scene_monitor::CurrentStateMonitor::clearUpdateCallbacks()
+void CurrentStateMonitor::clearUpdateCallbacks()
 {
   update_callbacks_.clear();
 }
 
-void planning_scene_monitor::CurrentStateMonitor::startStateMonitor(const std::string& joint_states_topic)
+void CurrentStateMonitor::startStateMonitor(const std::string& joint_states_topic)
 {
   rclcpp::Clock ros_clock;
   if (!state_monitor_started_ && robot_model_)
@@ -142,8 +143,7 @@ void planning_scene_monitor::CurrentStateMonitor::startStateMonitor(const std::s
     }
     else
       joint_state_subscriber_ = node_->create_subscription<sensor_msgs::msg::JointState>(
-          joint_states_topic,
-          std::bind(&planning_scene_monitor::CurrentStateMonitor::jointStateCallback, this, std::placeholders::_1),
+          joint_states_topic, std::bind(&CurrentStateMonitor::jointStateCallback, this, std::placeholders::_1),
           rmw_qos_profile_sensor_data);
     if (tf_buffer_ && !robot_model_->getMultiDOFJointModels().empty())
     {
@@ -158,12 +158,12 @@ void planning_scene_monitor::CurrentStateMonitor::startStateMonitor(const std::s
   }
 }
 
-bool planning_scene_monitor::CurrentStateMonitor::isActive() const
+bool CurrentStateMonitor::isActive() const
 {
   return state_monitor_started_;
 }
 
-void planning_scene_monitor::CurrentStateMonitor::stopStateMonitor()
+void CurrentStateMonitor::stopStateMonitor()
 {
   if (state_monitor_started_)
   {
@@ -180,11 +180,11 @@ void planning_scene_monitor::CurrentStateMonitor::stopStateMonitor()
   }
 }
 
-std::string planning_scene_monitor::CurrentStateMonitor::getMonitoredTopic(const std::string& joint_states_topic)
+std::string CurrentStateMonitor::getMonitoredTopic(const std::string& joint_states_topic)
 {
   std::string result;
   // joint_state_subscriber_ = node_->create_subscription<sensor_msgs::msg::JointState>(joint_states_topic,
-  //                   std::bind(&planning_scene_monitor::CurrentStateMonitor::jointStateCallback, this,
+  //                   std::bind(& CurrentStateMonitor::jointStateCallback, this,
   //                   std::placeholders::_1));
   if (joint_state_subscriber_)
     result = joint_state_subscriber_->get_topic_name();
@@ -194,7 +194,7 @@ std::string planning_scene_monitor::CurrentStateMonitor::getMonitoredTopic(const
   return result;
 }
 
-bool planning_scene_monitor::CurrentStateMonitor::haveCompleteState() const
+bool CurrentStateMonitor::haveCompleteState() const
 {
   bool result = true;
   const std::vector<const moveit::core::JointModel*>& joints = robot_model_->getActiveJointModels();
@@ -211,7 +211,7 @@ bool planning_scene_monitor::CurrentStateMonitor::haveCompleteState() const
   return result;
 }
 
-bool planning_scene_monitor::CurrentStateMonitor::haveCompleteState(std::vector<std::string>& missing_states) const
+bool CurrentStateMonitor::haveCompleteState(std::vector<std::string>& missing_states) const
 {
   bool result = true;
   const std::vector<const moveit::core::JointModel*>& joints = robot_model_->getActiveJointModels();
@@ -226,7 +226,7 @@ bool planning_scene_monitor::CurrentStateMonitor::haveCompleteState(std::vector<
   return result;
 }
 
-bool planning_scene_monitor::CurrentStateMonitor::haveCompleteState(const rclcpp::Duration& age) const
+bool CurrentStateMonitor::haveCompleteState(const rclcpp::Duration& age) const
 {
   bool result = true;
   const std::vector<const moveit::core::JointModel*>& joints = robot_model_->getActiveJointModels();
@@ -255,8 +255,7 @@ bool planning_scene_monitor::CurrentStateMonitor::haveCompleteState(const rclcpp
   return result;
 }
 
-bool planning_scene_monitor::CurrentStateMonitor::haveCompleteState(const rclcpp::Duration& age,
-                                                                    std::vector<std::string>& missing_states) const
+bool CurrentStateMonitor::haveCompleteState(const rclcpp::Duration& age, std::vector<std::string>& missing_states) const
 {
   bool result = true;
   const std::vector<const moveit::core::JointModel*>& joints = robot_model_->getActiveJointModels();
@@ -287,7 +286,7 @@ bool planning_scene_monitor::CurrentStateMonitor::haveCompleteState(const rclcpp
   return result;
 }
 
-bool planning_scene_monitor::CurrentStateMonitor::waitForCurrentState(rclcpp::Time t, double wait_time) const
+bool CurrentStateMonitor::waitForCurrentState(rclcpp::Time t, double wait_time) const
 {
   rclcpp::Clock ros_clock;
   t = ros_clock.now();
@@ -320,7 +319,7 @@ bool planning_scene_monitor::CurrentStateMonitor::waitForCurrentState(rclcpp::Ti
   return true;
 }
 
-bool planning_scene_monitor::CurrentStateMonitor::waitForCompleteState(double wait_time) const
+bool CurrentStateMonitor::waitForCompleteState(double wait_time) const
 {
   double slept_time = 0.0;
   double sleep_step_s = std::min(0.05, wait_time / 10.0);
@@ -333,7 +332,7 @@ bool planning_scene_monitor::CurrentStateMonitor::waitForCompleteState(double wa
   return haveCompleteState();
 }
 
-bool planning_scene_monitor::CurrentStateMonitor::waitForCompleteState(const std::string& group, double wait_time) const
+bool CurrentStateMonitor::waitForCompleteState(const std::string& group, double wait_time) const
 {
   if (waitForCompleteState(wait_time))
     return true;
@@ -360,8 +359,7 @@ bool planning_scene_monitor::CurrentStateMonitor::waitForCompleteState(const std
   return ok;
 }
 
-void planning_scene_monitor::CurrentStateMonitor::jointStateCallback(
-    const sensor_msgs::msg::JointState::ConstSharedPtr joint_state)
+void CurrentStateMonitor::jointStateCallback(const sensor_msgs::msg::JointState::ConstSharedPtr joint_state)
 {
   if (joint_state->name.size() != joint_state->position.size())
   {
@@ -435,7 +433,7 @@ void planning_scene_monitor::CurrentStateMonitor::jointStateCallback(
   state_update_condition_.notify_all();
 }
 
-void planning_scene_monitor::CurrentStateMonitor::tfCallback()
+void CurrentStateMonitor::tfCallback()
 {
   // read multi-dof joint states from TF, if needed
   const std::vector<const moveit::core::JointModel*>& multi_dof_joints = robot_model_->getMultiDOFJointModels();
@@ -508,3 +506,4 @@ void planning_scene_monitor::CurrentStateMonitor::tfCallback()
     state_update_condition_.notify_all();
   }
 }
+}  // namespace planning_scene_monitor

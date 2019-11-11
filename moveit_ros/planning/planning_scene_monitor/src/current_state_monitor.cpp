@@ -361,7 +361,7 @@ bool planning_scene_monitor::CurrentStateMonitor::waitForCompleteState(const std
 }
 
 void planning_scene_monitor::CurrentStateMonitor::jointStateCallback(
-    const sensor_msgs::msg::JointState::SharedPtr joint_state)
+    const sensor_msgs::msg::JointState::ConstSharedPtr joint_state)
 {
   if (joint_state->name.size() != joint_state->position.size())
   {

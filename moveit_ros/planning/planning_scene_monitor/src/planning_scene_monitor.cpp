@@ -515,7 +515,7 @@ bool PlanningSceneMonitor::requestPlanningSceneState(const std::string& service_
   return true;
 }
 
-void PlanningSceneMonitor::newPlanningSceneCallback(const moveit_msgs::msg::PlanningScene::SharedPtr scene)
+void PlanningSceneMonitor::newPlanningSceneCallback(const moveit_msgs::msg::PlanningScene::ConstSharedPtr scene)
 {
   newPlanningSceneMessage(*scene);
 }
@@ -606,7 +606,8 @@ bool PlanningSceneMonitor::newPlanningSceneMessage(const moveit_msgs::msg::Plann
   return result;
 }
 
-void PlanningSceneMonitor::newPlanningSceneWorldCallback(const moveit_msgs::msg::PlanningSceneWorld::SharedPtr world)
+void PlanningSceneMonitor::newPlanningSceneWorldCallback(
+    const moveit_msgs::msg::PlanningSceneWorld::ConstSharedPtr world)
 {
   if (scene_)
   {
@@ -630,7 +631,7 @@ void PlanningSceneMonitor::newPlanningSceneWorldCallback(const moveit_msgs::msg:
   }
 }
 
-void PlanningSceneMonitor::collisionObjectFailTFCallback(const moveit_msgs::msg::CollisionObject::SharedPtr& obj,
+void PlanningSceneMonitor::collisionObjectFailTFCallback(const moveit_msgs::msg::CollisionObject::ConstSharedPtr& obj,
                                                          tf2_ros::filter_failure_reasons::FilterFailureReason reason)
 {
   // if we just want to remove objects, the frame does not matter
@@ -639,7 +640,7 @@ void PlanningSceneMonitor::collisionObjectFailTFCallback(const moveit_msgs::msg:
     collisionObjectCallback(obj);
 }
 
-void PlanningSceneMonitor::collisionObjectCallback(const moveit_msgs::msg::CollisionObject::SharedPtr& obj)
+void PlanningSceneMonitor::collisionObjectCallback(const moveit_msgs::msg::CollisionObject::ConstSharedPtr& obj)
 {
   if (!scene_)
     return;
@@ -653,7 +654,7 @@ void PlanningSceneMonitor::collisionObjectCallback(const moveit_msgs::msg::Colli
   triggerSceneUpdateEvent(UPDATE_GEOMETRY);
 }
 
-void PlanningSceneMonitor::attachObjectCallback(const moveit_msgs::msg::AttachedCollisionObject::SharedPtr obj)
+void PlanningSceneMonitor::attachObjectCallback(const moveit_msgs::msg::AttachedCollisionObject::ConstSharedPtr obj)
 {
   if (scene_)
   {

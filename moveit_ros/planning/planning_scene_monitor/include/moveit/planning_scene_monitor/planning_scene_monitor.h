@@ -403,20 +403,20 @@ protected:
   void configureDefaultPadding();
 
   /** @brief Callback for a new collision object msg*/
-  void collisionObjectCallback(const moveit_msgs::msg::CollisionObject::SharedPtr& obj);
+  void collisionObjectCallback(const moveit_msgs::msg::CollisionObject::ConstSharedPtr& obj);
 
   /** @brief Callback for a new collision object msg that failed to pass the TF filter */
-  void collisionObjectFailTFCallback(const moveit_msgs::msg::CollisionObject::SharedPtr& obj,
+  void collisionObjectFailTFCallback(const moveit_msgs::msg::CollisionObject::ConstSharedPtr& obj,
                                      tf2_ros::filter_failure_reasons::FilterFailureReason reason);
 
   /** @brief Callback for a new planning scene world*/
-  void newPlanningSceneWorldCallback(const moveit_msgs::msg::PlanningSceneWorld::SharedPtr world);
+  void newPlanningSceneWorldCallback(const moveit_msgs::msg::PlanningSceneWorld::ConstSharedPtr world);
 
   /** @brief Callback for octomap updates */
   void octomapUpdateCallback();
 
   /** @brief Callback for a new attached object msg*/
-  void attachObjectCallback(const moveit_msgs::msg::AttachedCollisionObject::SharedPtr obj);
+  void attachObjectCallback(const moveit_msgs::msg::AttachedCollisionObject::ConstSharedPtr obj);
 
   /** @brief Callback for a change for an attached object of the current state of the planning scene */
   void currentStateAttachedBodyUpdateCallback(robot_state::AttachedBody* attached_body, bool just_attached);
@@ -531,7 +531,7 @@ private:
   void stateUpdateTimerCallback(/*const ros::WallTimerEvent& event*/);
 
   // Callback for a new planning scene msg
-  void newPlanningSceneCallback(const moveit_msgs::msg::PlanningScene::SharedPtr scene);
+  void newPlanningSceneCallback(const moveit_msgs::msg::PlanningScene::ConstSharedPtr scene);
 
   // Lock for state_update_pending_ and dt_state_update_
   boost::mutex state_pending_mutex_;

@@ -39,16 +39,15 @@
 #include <tf2_ros/buffer.h>
 #include <moveit/robot_state/robot_state.h>
 #include <sensor_msgs/msg/joint_state.hpp>
-#include <functional>
-#include <mutex>
+#include <boost/function.hpp>
+#include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/signals2.hpp>
-#include "rclcpp/rclcpp.hpp"
-#include "rcutils/logging_macros.h"
+#include <rclcpp/rclcpp.hpp>
 
 namespace planning_scene_monitor
 {
-typedef std::function<void(const sensor_msgs::msg::JointState::ConstPtr& joint_state)> JointStateUpdateCallback;
+typedef boost::function<void(const sensor_msgs::msg::JointState::ConstSharedPtr& joint_state)> JointStateUpdateCallback;
 
 /** @class CurrentStateMonitor
     @brief Monitors the joint_states topic and tf to maintain the current state of the robot. */
@@ -86,7 +85,7 @@ public:
   }
 
   /** @brief Get the name of the topic being monitored. Returns an empty string if the monitor is inactive. */
-  std::string getMonitoredTopic(const std::string& joint_states_topic = "joint_states");
+  std::string getMonitoredTopic() const;
 
   /** @brief Query whether we have joint state information for all DOFs in the kinematic model
    *  @return False if we have no joint state information for one or more of the joints
@@ -133,7 +132,7 @@ public:
   /** @brief Wait for at most \e wait_time seconds (default 1s) for a robot state more recent than t
    *  @return true on success, false if up-to-date robot state wasn't received within \e wait_time
   */
-  bool waitForCurrentState(const rclcpp::Time& t, double wait_time = 1.0) const;
+  bool waitForCurrentState(const rclcpp::Time t = rclcpp::Clock().now(), double wait_time = 1.0) const;
 
   /** @brief Wait for at most \e wait_time seconds until the complete robot state is known.
       @return true if the full state is known */
@@ -194,15 +193,14 @@ private:
   bool copy_dynamics_;  // Copy velocity and effort from joint_state
   rclcpp::Time monitor_start_time_;
   double error_;
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_subscriber_;
   rclcpp::Time current_state_time_;
 
-  mutable std::mutex state_update_lock_;
-  mutable std::condition_variable state_update_condition_;
+  mutable boost::mutex state_update_lock_;
+  mutable boost::condition_variable state_update_condition_;
   std::vector<JointStateUpdateCallback> update_callbacks_;
 
   std::shared_ptr<TFConnection> tf_connection_;
-
-  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_subscriber_;
 };
 
 MOVEIT_CLASS_FORWARD(CurrentStateMonitor)

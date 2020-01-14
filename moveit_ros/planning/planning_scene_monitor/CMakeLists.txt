@@ -1,6 +1,5 @@
 set(MOVEIT_LIB_NAME moveit_planning_scene_monitor)
 
-include_directories(${moveit_ros_perception_INCLUDE_DIRS})
 add_library(${MOVEIT_LIB_NAME} SHARED
   src/planning_scene_monitor.cpp
   src/current_state_monitor.cpp
@@ -8,9 +7,7 @@ add_library(${MOVEIT_LIB_NAME} SHARED
 )
 set_target_properties(${MOVEIT_LIB_NAME} PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
 ament_target_dependencies(${MOVEIT_LIB_NAME}
-  moveit_collision_plugin_loader
-  moveit_occupancy_map_monitor
-  moveit_ros_perception
+  moveit_ros_occupancy_map_monitor
   message_filters
   urdf
   pluginlib
@@ -22,16 +19,22 @@ ament_target_dependencies(${MOVEIT_LIB_NAME}
 add_executable(demo_scene demos/demo_scene.cpp)
 ament_target_dependencies(demo_scene
   rclcpp
-  ${MOVEIT_LIB_NAME}
   Boost
   moveit_msgs
   urdf
   message_filters
-  pluginlib)
+  pluginlib
+)
+target_link_libraries(demo_scene ${MOVEIT_LIB_NAME})
 
 install(TARGETS ${MOVEIT_LIB_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin)
+  RUNTIME DESTINATION bin
+)
+
+install(TARGETS demo_scene
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 install(DIRECTORY include/ DESTINATION include)

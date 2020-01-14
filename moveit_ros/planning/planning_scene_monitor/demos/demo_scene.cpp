@@ -37,18 +37,15 @@
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <geometric_shapes/solid_primitive_dims.h>
 
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 
-static const rclcpp::Logger LOGGER = rclcpp::get_logger("demo_scene");
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("moveit_ros.planning_scene_monitor.demo_scene");
 
 static const std::string ROBOT_DESCRIPTION = "robot_description";
 
-rclcpp::Node::SharedPtr node;
-
-void sendKnife()
+void sendKnife(const rclcpp::Node::SharedPtr& node)
 {
-  auto pub_aco = node->create_publisher<moveit_msgs::msg::AttachedCollisionObject>("attached_collision_object");
-  rclcpp::Clock clock;
+  auto pub_aco = node->create_publisher<moveit_msgs::msg::AttachedCollisionObject>("attached_collision_object", 10);
   moveit_msgs::msg::AttachedCollisionObject aco;
   aco.link_name = "r_wrist_roll_link";
   aco.touch_links.push_back("r_wrist_roll_link");
@@ -66,7 +63,7 @@ void sendKnife()
 
   moveit_msgs::msg::CollisionObject& co = aco.object;
   co.id = "knife";
-  co.header.stamp = clock.now();
+  co.header.stamp = rclcpp::Clock().now();
   co.header.frame_id = aco.link_name;
   co.operation = moveit_msgs::msg::CollisionObject::ADD;
   co.primitives.resize(1);
@@ -80,21 +77,22 @@ void sendKnife()
   co.primitive_poses[0].position.z = -0.2;
   co.primitive_poses[0].orientation.w = 1.0;
 
+  using namespace std::chrono_literals;
   pub_aco->publish(aco);
-  sleep(1);
+  rclcpp::sleep_for(1s);
   pub_aco->publish(aco);
-
   RCLCPP_INFO(LOGGER, "Object published.");
-  rclcpp::sleep_for(std::chrono::milliseconds(1500));
+  rclcpp::sleep_for(1500ms);
 }
 
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
 
-  node = rclcpp::Node::make_shared("demo");
+  auto node = rclcpp::Node::make_shared("demo_scene");
 
-  sendKnife();
+  sendKnife(node);
+
   rclcpp::spin(node);
 
   return 0;

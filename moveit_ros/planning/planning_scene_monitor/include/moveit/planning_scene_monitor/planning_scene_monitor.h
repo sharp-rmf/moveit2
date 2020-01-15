@@ -36,8 +36,10 @@
 
 #pragma once
 
+#include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/message_filter.h>
 #include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 #include <moveit/macros/class_forward.h>
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
@@ -48,8 +50,6 @@
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <memory>
-#include "rcutils/logging_macros.h"
-#include "tf2_ros/transform_listener.h"
 
 namespace planning_scene_monitor
 {
@@ -108,7 +108,7 @@ public:
    *  @param tf_buffer A pointer to a tf2_ros::Buffer
    *  @param name A name identifying this planning scene monitor
    */
-  PlanningSceneMonitor(const std::string& robot_description, std::shared_ptr<rclcpp::Node>& node,
+  PlanningSceneMonitor(const rclcpp::Node::SharedPtr& node, const std::string& robot_description,
                        const std::shared_ptr<tf2_ros::Buffer>& tf_buffer = std::shared_ptr<tf2_ros::Buffer>(),
                        const std::string& name = "");
 
@@ -117,7 +117,7 @@ public:
    *  @param tf_buffer A pointer to a tf2_ros::Buffer
    *  @param name A name identifying this planning scene monitor
    */
-  PlanningSceneMonitor(const robot_model_loader::RobotModelLoaderPtr& rml, std::shared_ptr<rclcpp::Node>& node,
+  PlanningSceneMonitor(const rclcpp::Node::SharedPtr& node, const robot_model_loader::RobotModelLoaderPtr& rml,
                        const std::shared_ptr<tf2_ros::Buffer>& tf_buffer = std::shared_ptr<tf2_ros::Buffer>(),
                        const std::string& name = "");
 
@@ -127,8 +127,8 @@ public:
    *  @param tf_buffer A pointer to a tf2_ros::Buffer
    *  @param name A name identifying this planning scene monitor
    */
-  PlanningSceneMonitor(const planning_scene::PlanningScenePtr& scene, const std::string& robot_description,
-                       std::shared_ptr<rclcpp::Node>& node,
+  PlanningSceneMonitor(const rclcpp::Node::SharedPtr& node, const planning_scene::PlanningScenePtr& scene,
+                       const std::string& robot_description,
                        const std::shared_ptr<tf2_ros::Buffer>& tf_buffer = std::shared_ptr<tf2_ros::Buffer>(),
                        const std::string& name = "");
 
@@ -138,8 +138,8 @@ public:
    *  @param tf_buffer A pointer to a tf2_ros::Buffer
    *  @param name A name identifying this planning scene monitor
    */
-  PlanningSceneMonitor(const planning_scene::PlanningScenePtr& scene,
-                       const robot_model_loader::RobotModelLoaderPtr& rml, std::shared_ptr<rclcpp::Node>& node,
+  PlanningSceneMonitor(const rclcpp::Node::SharedPtr& node, const planning_scene::PlanningScenePtr& scene,
+                       const robot_model_loader::RobotModelLoaderPtr& rml,
                        const std::shared_ptr<tf2_ros::Buffer>& tf_buffer = std::shared_ptr<tf2_ros::Buffer>(),
                        const std::string& name = "");
 
@@ -306,9 +306,8 @@ public:
   /** @brief Get the maximum frequency (Hz) at which the current state of the planning scene is updated.*/
   double getStateUpdateFrequency() const
   {
-    double t = dt_state_update_.seconds();
-    if (t != 0)
-      return 1.0 / t;
+    if (!dt_state_update_.seconds())
+      return 1.0 / dt_state_update_.seconds();
     else
       return 0.0;
   }
@@ -489,8 +488,7 @@ protected:
 
   rclcpp::Subscription<moveit_msgs::msg::AttachedCollisionObject>::SharedPtr attached_collision_object_subscriber_;
 
-  // rclcpp::Subscription<moveit_msgs::msg::CollisionObject>::SharedPtr collision_object_subscriber_;
-  std::unique_ptr<message_filters::Subscriber<moveit_msgs::msg::CollisionObject> > collision_object_subscriber_;
+  rclcpp::Subscription<moveit_msgs::msg::CollisionObject>::SharedPtr collision_object_subscriber_;
   std::unique_ptr<tf2_ros::MessageFilter<moveit_msgs::msg::CollisionObject> > collision_object_filter_;
 
   // include a octomap monitor
@@ -525,7 +523,7 @@ private:
   void scenePublishingThread();
 
   // called by current_state_monitor_ when robot state (as monitored on joint state topic) changes
-  void onStateUpdate(const sensor_msgs::msg::JointState::ConstSharedPtr& /*joint_state*/);
+  void onStateUpdate(const sensor_msgs::msg::JointState::ConstSharedPtr& joint_state);
 
   // called by state_update_timer_ when a state update it pending
   void stateUpdateTimerCallback(/*const ros::WallTimerEvent& event*/);
@@ -553,7 +551,7 @@ private:
   // Check if last_state_update_ is true and if so call updateSceneWithCurrentState()
   // Not safe to access from callback functions.
 
-  std::shared_ptr<rclcpp::TimerBase> state_update_timer_;
+  rclcpp::TimerBase::SharedPtr state_update_timer_;
 
   /// Last time the state was updated from current_state_monitor_
   // Only access this from callback functions (and constructor)
@@ -566,8 +564,6 @@ private:
 
   class DynamicReconfigureImpl;
   DynamicReconfigureImpl* reconfigure_impl_;
-
-  rclcpp::Clock clock_;
 };
 
 /** \brief This is a convenience class for obtaining access to an

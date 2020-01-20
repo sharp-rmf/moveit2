@@ -36,11 +36,11 @@
 
 #include <moveit/planning_scene_monitor/trajectory_monitor.h>
 #include <moveit/trajectory_processing/trajectory_tools.h>
-#include "rclcpp/rate.hpp"
+#include <rclcpp/rate.hpp>
 #include <limits>
 #include <memory>
 
-rclcpp::Logger LOGGER_TRAJECTORY_MONITOR = rclcpp::get_logger("trajectory_monitor");
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("moveit_ros.planning_scene_monitor.trajectory_monitor");
 
 planning_scene_monitor::TrajectoryMonitor::TrajectoryMonitor(const CurrentStateMonitorConstPtr& state_monitor,
                                                              double sampling_frequency)
@@ -58,14 +58,14 @@ planning_scene_monitor::TrajectoryMonitor::~TrajectoryMonitor()
 
 void planning_scene_monitor::TrajectoryMonitor::setSamplingFrequency(double sampling_frequency)
 {
+  if (sampling_frequency != sampling_frequency_)
+    return;  // silently return if nothing changes
+
   if (sampling_frequency <= std::numeric_limits<double>::epsilon())
-  {
-    RCLCPP_ERROR(LOGGER_TRAJECTORY_MONITOR, "The sampling frequency for trajectory states should be positive");
-  }
+    RCLCPP_ERROR(LOGGER, "The sampling frequency for trajectory states should be positive");
   else
-  {
-    sampling_frequency_ = sampling_frequency;
-  }
+    RCLCPP_DEBUG(LOGGER, "Setting trajectory sampling frequency to %.1f", sampling_frequency);
+  sampling_frequency_ = sampling_frequency;
 }
 
 bool planning_scene_monitor::TrajectoryMonitor::isActive() const
@@ -78,7 +78,7 @@ void planning_scene_monitor::TrajectoryMonitor::startTrajectoryMonitor()
   if (sampling_frequency_ > std::numeric_limits<double>::epsilon() && !record_states_thread_)
   {
     record_states_thread_.reset(new boost::thread(boost::bind(&TrajectoryMonitor::recordStates, this)));
-    RCLCPP_DEBUG(LOGGER_TRAJECTORY_MONITOR, "Started trajectory monitor");
+    RCLCPP_DEBUG(LOGGER, "Started trajectory monitor");
   }
 }
 
@@ -89,7 +89,7 @@ void planning_scene_monitor::TrajectoryMonitor::stopTrajectoryMonitor()
     std::unique_ptr<boost::thread> copy;
     copy.swap(record_states_thread_);
     copy->join();
-    RCLCPP_DEBUG(LOGGER_TRAJECTORY_MONITOR, "Stopped trajectory monitor");
+    RCLCPP_DEBUG(LOGGER, "Stopped trajectory monitor");
   }
 }
 

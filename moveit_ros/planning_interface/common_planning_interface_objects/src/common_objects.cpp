@@ -37,8 +37,10 @@
 #include <moveit/common_planning_interface_objects/common_objects.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <tf2_ros/transform_listener.h>
+#include <boost/thread/mutex.hpp>
 
-using namespace planning_scene_monitor;
+// TODO(JafarAbdi): uncomment once PSM is merged
+// using namespace planning_scene_monitor;
 using namespace robot_model_loader;
 
 namespace
@@ -52,14 +54,16 @@ struct SharedStorage
   ~SharedStorage()
   {
     tf_buffer_.reset();
-    state_monitors_.clear();
+    // state_monitors_.clear();
     models_.clear();
   }
 
   boost::mutex lock_;
+  rclcpp::Clock::SharedPtr clock_;
   std::weak_ptr<tf2_ros::Buffer> tf_buffer_;
   std::map<std::string, robot_model::RobotModelWeakPtr> models_;
-  std::map<std::string, CurrentStateMonitorWeakPtr> state_monitors_;
+  // TODO(JafarAbdi): uncomment once PSM is merged
+  // std::map<std::string, CurrentStateMonitorWeakPtr> state_monitors_;
 };
 
 SharedStorage& getSharedStorage()
@@ -105,7 +109,8 @@ std::shared_ptr<tf2_ros::Buffer> getSharedTF()
   std::shared_ptr<tf2_ros::Buffer> buffer = s.tf_buffer_.lock();
   if (!buffer)
   {
-    tf2_ros::Buffer* raw = new tf2_ros::Buffer();
+    s.clock_ = std::make_shared<rclcpp::Clock>();
+    tf2_ros::Buffer* raw = new tf2_ros::Buffer(s.clock_);
     // assign custom deleter to also delete associated TransformListener
     buffer.reset(raw, Deleter(new tf2_ros::TransformListener(*raw)));
     s.tf_buffer_ = buffer;
@@ -113,46 +118,49 @@ std::shared_ptr<tf2_ros::Buffer> getSharedTF()
   return buffer;
 }
 
-robot_model::RobotModelConstPtr getSharedRobotModel(const std::string& robot_description)
-{
-  SharedStorage& s = getSharedStorage();
-  boost::mutex::scoped_lock slock(s.lock_);
-  auto it = s.models_.insert(std::make_pair(robot_description, robot_model::RobotModelWeakPtr())).first;
-  robot_model::RobotModelPtr model = it->second.lock();
-  if (!model)
-  {
-    RobotModelLoader::Options opt(robot_description);
-    opt.load_kinematics_solvers_ = true;
-    RobotModelLoaderPtr loader(new RobotModelLoader(opt));
-    // create an aliasing shared_ptr
-    model = robot_model::RobotModelPtr(loader, loader->getModel().get());
-    it->second = model;
-  }
-  return model;
-}
+// TODO(JafarAbdi): uncomment once PSM is merged
+// robot_model::RobotModelConstPtr getSharedRobotModel(const std::string& robot_description)
+//{
+//  SharedStorage& s = getSharedStorage();
+//  boost::mutex::scoped_lock slock(s.lock_);
+//  auto it = s.models_.insert(std::make_pair(robot_description, robot_model::RobotModelWeakPtr())).first;
+//  robot_model::RobotModelPtr model = it->second.lock();
+//  if (!model)
+//  {
+//    RobotModelLoader::Options opt(robot_description);
+//    opt.load_kinematics_solvers_ = true;
+//    RobotModelLoaderPtr loader(new RobotModelLoader(opt));
+//    // create an aliasing shared_ptr
+//    model = robot_model::RobotModelPtr(loader, loader->getModel().get());
+//    it->second = model;
+//  }
+//  return model;
+//}
 
-CurrentStateMonitorPtr getSharedStateMonitor(const robot_model::RobotModelConstPtr& robot_model,
-                                             const std::shared_ptr<tf2_ros::Buffer>& tf_buffer)
-{
-  return getSharedStateMonitor(robot_model, tf_buffer, ros::NodeHandle());
-}
+// TODO(JafarAbdi): uncomment once PSM is merged
+// CurrentStateMonitorPtr getSharedStateMonitor(const robot_model::RobotModelConstPtr& robot_model,
+//                                             const std::shared_ptr<tf2_ros::Buffer>& tf_buffer)
+//{
+//  return getSharedStateMonitor(robot_model, tf_buffer, ros::NodeHandle());
+//}
 
-CurrentStateMonitorPtr getSharedStateMonitor(const robot_model::RobotModelConstPtr& robot_model,
-                                             const std::shared_ptr<tf2_ros::Buffer>& tf_buffer,
-                                             const ros::NodeHandle& nh)
-{
-  SharedStorage& s = getSharedStorage();
-  boost::mutex::scoped_lock slock(s.lock_);
-  auto it = s.state_monitors_.insert(std::make_pair(robot_model->getName(), CurrentStateMonitorWeakPtr())).first;
-  CurrentStateMonitorPtr monitor = it->second.lock();
-  if (!monitor)
-  {
-    // if there was no valid entry, create one
-    monitor.reset(new CurrentStateMonitor(robot_model, tf_buffer, nh));
-    it->second = monitor;
-  }
-  return monitor;
-}
+// TODO(JafarAbdi): uncomment once PSM is merged
+// CurrentStateMonitorPtr getSharedStateMonitor(const robot_model::RobotModelConstPtr& robot_model,
+//                                             const std::shared_ptr<tf2_ros::Buffer>& tf_buffer,
+//                                             const ros::NodeHandle& nh)
+//{
+//  SharedStorage& s = getSharedStorage();
+//  boost::mutex::scoped_lock slock(s.lock_);
+//  auto it = s.state_monitors_.insert(std::make_pair(robot_model->getName(), CurrentStateMonitorWeakPtr())).first;
+//  CurrentStateMonitorPtr monitor = it->second.lock();
+//  if (!monitor)
+//  {
+//    // if there was no valid entry, create one
+//    monitor.reset(new CurrentStateMonitor(robot_model, tf_buffer, nh));
+//    it->second = monitor;
+//  }
+//  return monitor;
+//}
 
 }  // namespace planning_interface
 }  // namespace moveit

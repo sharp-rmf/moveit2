@@ -36,7 +36,10 @@
 
 #pragma once
 
-#include <moveit/planning_scene_monitor/current_state_monitor.h>
+#include <memory>
+#include <tf2_ros/buffer.h>
+// TODO(JafarAbdi): uncomment once PSM is merged
+// #include <moveit/planning_scene_monitor/current_state_monitor.h>
 
 namespace moveit
 {
@@ -44,7 +47,8 @@ namespace planning_interface
 {
 std::shared_ptr<tf2_ros::Buffer> getSharedTF();
 
-robot_model::RobotModelConstPtr getSharedRobotModel(const std::string& robot_description);
+// TODO(JafarAbdi): Enable once PSM is merged
+// robot_model::RobotModelConstPtr getSharedRobotModel(const std::string& robot_description);
 
 /**
   @brief getSharedStateMonitor is a simpler version of getSharedStateMonitor(const robot_model::RobotModelConstPtr
@@ -55,8 +59,11 @@ robot_model::RobotModelConstPtr getSharedRobotModel(const std::string& robot_des
   @param tf_buffer
   @return
  */
-planning_scene_monitor::CurrentStateMonitorPtr getSharedStateMonitor(const robot_model::RobotModelConstPtr& robot_model,
-                                                                     const std::shared_ptr<tf2_ros::Buffer>& tf_buffer);
+// TODO(JafarAbdi): Enable once PSM is merged
+// planning_scene_monitor::CurrentStateMonitorPtr getSharedStateMonitor(const robot_model::RobotModelConstPtr&
+// robot_model,
+//                                                                     const std::shared_ptr<tf2_ros::Buffer>&
+//                                                                     tf_buffer);
 
 /**
   @brief getSharedStateMonitor
@@ -66,9 +73,10 @@ planning_scene_monitor::CurrentStateMonitorPtr getSharedStateMonitor(const robot
   @param nh A ros::NodeHandle to pass node specific configurations, such as callbacks queues.
   @return
  */
-planning_scene_monitor::CurrentStateMonitorPtr getSharedStateMonitor(const robot_model::RobotModelConstPtr& robot_model,
-                                                                     const std::shared_ptr<tf2_ros::Buffer>& tf_buffer,
-                                                                     const ros::NodeHandle& nh);
-
-}  // namespace planning interface
+// TODO(JafarAbdi): Enable once PSM is merged
+// planning_scene_monitor::CurrentStateMonitorPtr getSharedStateMonitor(const robot_model::RobotModelConstPtr&
+// robot_model,
+//                                                                     const std::shared_ptr<tf2_ros::Buffer>&
+//                                                                     tf_buffer, const ros::NodeHandle& nh);
+}  // namespace planning_interface
 }  // namespace moveit

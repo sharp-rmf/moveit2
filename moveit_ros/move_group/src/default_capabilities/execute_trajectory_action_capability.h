@@ -41,8 +41,10 @@
 #pragma once
 
 #include <moveit/move_group/move_group_capability.h>
+#if 0 //@todo
 #include <actionlib/server/simple_action_server.h>
 #include <moveit_msgs/ExecuteTrajectoryAction.h>
+#endif
 #include <memory>
 
 namespace move_group
@@ -55,6 +57,7 @@ public:
   void initialize() override;
 
 private:
+#if 0 //@todo
   void executePathCallback(const moveit_msgs::action::ExecuteTrajectoryGoalConstPtr& goal);
   void executePath(const moveit_msgs::action::ExecuteTrajectoryGoalConstPtr& goal,
                    moveit_msgs::action::ExecuteTrajectoryResult& action_res);
@@ -62,6 +65,7 @@ private:
   void setExecuteTrajectoryState(MoveGroupState state);
 
   std::unique_ptr<actionlib::SimpleActionServer<moveit_msgs::action::ExecuteTrajectoryAction> > execute_action_server_;
+#endif
 };
 
 }  // namespace move_group

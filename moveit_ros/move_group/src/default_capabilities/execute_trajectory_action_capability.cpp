@@ -50,14 +50,16 @@ MoveGroupExecuteTrajectoryAction::MoveGroupExecuteTrajectoryAction() : MoveGroup
 void MoveGroupExecuteTrajectoryAction::initialize()
 {
   // start the move action server
+#if 0 //@todo
   execute_action_server_.reset(new actionlib::SimpleActionServer<moveit_msgs::action::ExecuteTrajectoryAction>(
       root_node_handle_, EXECUTE_ACTION_NAME,
       boost::bind(&MoveGroupExecuteTrajectoryAction::executePathCallback, this, _1), false));
   execute_action_server_->registerPreemptCallback(
       boost::bind(&MoveGroupExecuteTrajectoryAction::preemptExecuteTrajectoryCallback, this));
   execute_action_server_->start();
+#endif
 }
-
+#if 0 //@todo
 void MoveGroupExecuteTrajectoryAction::executePathCallback(
     const moveit_msgs::action::ExecuteTrajectoryGoalConstPtr& goal)
 {
@@ -135,7 +137,7 @@ void MoveGroupExecuteTrajectoryAction::setExecuteTrajectoryState(MoveGroupState 
   execute_feedback.state = stateToStr(state);
   execute_action_server_->publishFeedback(execute_feedback);
 }
-
+#endif
 }  // namespace move_group
 
 #include <class_loader/class_loader.hpp>

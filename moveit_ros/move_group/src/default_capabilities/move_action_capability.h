@@ -37,8 +37,10 @@
 #pragma once
 
 #include <moveit/move_group/move_group_capability.h>
+#if 0 //@todo
 #include <actionlib/server/simple_action_server.h>
-#include <moveit_msgs/MoveGroupAction.h>
+#endif
+#include <moveit_msgs/action/move_group.hpp>
 #include <memory>
 
 namespace move_group
@@ -51,21 +53,26 @@ public:
   void initialize() override;
 
 private:
+#if 0 //@todo
   void executeMoveCallback(const moveit_msgs::action::MoveGroupGoalConstPtr& goal);
   void executeMoveCallbackPlanAndExecute(const moveit_msgs::action::MoveGroupGoalConstPtr& goal,
                                          moveit_msgs::action::MoveGroupResult& action_res);
   void executeMoveCallbackPlanOnly(const moveit_msgs::action::MoveGroupGoalConstPtr& goal,
                                    moveit_msgs::action::MoveGroupResult& action_res);
+#endif
   void startMoveExecutionCallback();
   void startMoveLookCallback();
   void preemptMoveCallback();
   void setMoveState(MoveGroupState state);
+#if 0 //@todo
   bool planUsingPlanningPipeline(const planning_interface::MotionPlanRequest& req,
                                  plan_execution::ExecutableMotionPlan& plan);
+#endif
 
+#if 0 //@todo
   std::unique_ptr<actionlib::SimpleActionServer<moveit_msgs::action::MoveGroupAction> > move_action_server_;
   moveit_msgs::action::MoveGroupFeedback move_feedback_;
-
+#endif
   MoveGroupState move_state_;
   bool preempt_requested_;
 };

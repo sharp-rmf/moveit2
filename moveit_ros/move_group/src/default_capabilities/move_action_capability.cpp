@@ -54,12 +54,14 @@ MoveGroupMoveAction::MoveGroupMoveAction()
 void MoveGroupMoveAction::initialize()
 {
   // start the move action server
+#if 0 //@todo
   move_action_server_.reset(new actionlib::SimpleActionServer<moveit_msgs::action::MoveGroupAction>(
       root_node_handle_, MOVE_ACTION, boost::bind(&MoveGroupMoveAction::executeMoveCallback, this, _1), false));
   move_action_server_->registerPreemptCallback(boost::bind(&MoveGroupMoveAction::preemptMoveCallback, this));
   move_action_server_->start();
+#endif
 }
-
+#if 0 //@todo
 void MoveGroupMoveAction::executeMoveCallback(const moveit_msgs::action::MoveGroupGoalConstPtr& goal)
 {
   setMoveState(PLANNING);
@@ -93,7 +95,6 @@ void MoveGroupMoveAction::executeMoveCallback(const moveit_msgs::action::MoveGro
   }
 
   setMoveState(IDLE);
-
   preempt_requested_ = false;
 }
 
@@ -193,6 +194,7 @@ void MoveGroupMoveAction::executeMoveCallbackPlanOnly(const moveit_msgs::action:
   convertToMsg(res.trajectory_, action_res.trajectory_start, action_res.planned_trajectory);
   action_res.error_code = res.error_code_;
   action_res.planning_time = res.planning_time_;
+
 }
 
 bool MoveGroupMoveAction::planUsingPlanningPipeline(const planning_interface::MotionPlanRequest& req,
@@ -219,8 +221,10 @@ bool MoveGroupMoveAction::planUsingPlanningPipeline(const planning_interface::Mo
     plan.plan_components_[0].description_ = "plan";
   }
   plan.error_code_ = res.error_code_;
+
   return solved;
 }
+#endif
 
 void MoveGroupMoveAction::startMoveExecutionCallback()
 {
@@ -241,8 +245,10 @@ void MoveGroupMoveAction::preemptMoveCallback()
 void MoveGroupMoveAction::setMoveState(MoveGroupState state)
 {
   move_state_ = state;
+#if 0 //@todo
   move_feedback_.state = stateToStr(state);
   move_action_server_->publishFeedback(move_feedback_);
+#endif
 }
 }  // namespace move_group
 

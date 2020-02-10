@@ -45,12 +45,16 @@
 #include <moveit_msgs/msg/constraints.hpp>
 #include <moveit_msgs/msg/grasp.hpp>
 #include <moveit_msgs/msg/place_location.hpp>
+#if 0 //@todo
 #include <moveit_msgs/action/pickup_goal.h>
 #include <moveit_msgs/action/place_goal.h>
-#include <moveit_msgs/msg/motion_plan_request.hpp>
 #include <moveit_msgs/action/move_group_action.h>
+#endif
+#include <moveit_msgs/msg/motion_plan_request.hpp>
 #include <geometry_msgs/msg/pose_stamped.h>
+#if 0 //@todo
 #include <actionlib/client/simple_action_client.h>
+#endif
 #include <memory>
 #include <utility>
 #include <tf2_ros/buffer.h>
@@ -106,8 +110,8 @@ public:
   struct Options
   {
     Options(std::string group_name, std::string desc = ROBOT_DESCRIPTION,
-            const ros::NodeHandle& node_handle = ros::NodeHandle())
-      : group_name_(std::move(group_name)), robot_description_(std::move(desc)), node_handle_(node_handle)
+            const rclcpp::Node::SharedPtr& node = nullptr)
+      : group_name_(std::move(group_name)), robot_description_(std::move(desc)), node_(node)
     {
     }
 
@@ -120,7 +124,7 @@ public:
     /// Optionally, an instance of the RobotModel to use can be also specified
     robot_model::RobotModelConstPtr robot_model_;
 
-    ros::NodeHandle node_handle_;
+    rclcpp::Node::SharedPtr node_;
   };
 
   MOVEIT_STRUCT_FORWARD(Plan)
@@ -150,9 +154,11 @@ public:
     */
   MoveGroupInterface(const Options& opt,
                      const std::shared_ptr<tf2_ros::Buffer>& tf_buffer = std::shared_ptr<tf2_ros::Buffer>(),
-                     const ros::WallDuration& wait_for_servers = ros::WallDuration());
+                     const rclcpp::Duration& wait_for_servers = rclcpp::Duration(std::chrono::duration_values<double>::max()));
+#if 0 //@todo
   [[deprecated]] MoveGroupInterface(const Options& opt, const std::shared_ptr<tf2_ros::Buffer>& tf_buffer,
-                                    const ros::Duration& wait_for_servers);
+                                    const rclcpp::Duration& wait_for_servers);
+#endif
 
   /**
       \brief Construct a client for the MoveGroup action for a particular \e group.
@@ -163,9 +169,11 @@ public:
     */
   MoveGroupInterface(const std::string& group,
                      const std::shared_ptr<tf2_ros::Buffer>& tf_buffer = std::shared_ptr<tf2_ros::Buffer>(),
-                     const ros::WallDuration& wait_for_servers = ros::WallDuration());
+                     const rclcpp::Duration& wait_for_servers = rclcpp::Duration(std::chrono::duration_values<double>::max()));
+#if 0 //@todo
   [[deprecated]] MoveGroupInterface(const std::string& group, const std::shared_ptr<tf2_ros::Buffer>& tf_buffer,
-                                    const ros::Duration& wait_for_servers);
+                                    const rclcpp::Duration& wait_for_servers);
+#endif
 
   ~MoveGroupInterface();
 
@@ -190,7 +198,7 @@ public:
   robot_model::RobotModelConstPtr getRobotModel() const;
 
   /** \brief Get the ROS node handle of this instance operates on */
-  const ros::NodeHandle& getNodeHandle() const;
+  rclcpp::Node::SharedPtr getNodeHandle();
 
   /** \brief Get the name of the frame in which the robot is planning */
   const std::string& getPlanningFrame() const;
@@ -715,7 +723,9 @@ public:
   /** \brief Get the move_group action client used by the \e MoveGroupInterface.
       The client can be used for querying the execution state of the trajectory and abort trajectory execution
       during asynchronous execution. */
+#if 0 //@todo
   actionlib::SimpleActionClient<moveit_msgs::action::MoveGroupAction>& getMoveGroupClient() const;
+#endif
 
   /** \brief Plan and execute a trajectory that takes the group of joints declared in the constructor to the specified
      target.
@@ -779,6 +789,7 @@ public:
   void constructMotionPlanRequest(moveit_msgs::msg::MotionPlanRequest& request);
 
   /** \brief Build a PickupGoal for an object named \e object and store it in \e goal_out */
+#if 0 //@todo
   moveit_msgs::action::PickupGoal constructPickupGoal(const std::string& object,
                                                       std::vector<moveit_msgs::msg::Grasp> grasps,
                                                       bool plan_only) const;
@@ -787,7 +798,7 @@ public:
   moveit_msgs::action::PlaceGoal constructPlaceGoal(const std::string& object,
                                                     std::vector<moveit_msgs::msg::PlaceLocation> locations,
                                                     bool plan_only) const;
-
+#endif
   /** \brief Convert a vector of PoseStamped to a vector of PlaceLocation */
   std::vector<moveit_msgs::msg::PlaceLocation>
   posesToPlaceLocations(const std::vector<geometry_msgs::msg::PoseStamped>& poses) const;
@@ -804,26 +815,40 @@ public:
       This applies a number of hard-coded default grasps */
   MoveItErrorCode pick(const std::string& object, bool plan_only = false)
   {
+#if 0 //@todo
     return pick(constructPickupGoal(object, std::vector<moveit_msgs::msg::Grasp>(), plan_only));
+#else
+    return moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
+#endif
   }
 
   /** \brief Pick up an object given a grasp pose */
   MoveItErrorCode pick(const std::string& object, const moveit_msgs::msg::Grasp& grasp, bool plan_only = false)
   {
+#if 0 //@todo
     return pick(constructPickupGoal(object, { grasp }, plan_only));
+#else
+    return moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
+#endif
   }
 
   /** \brief Pick up an object given possible grasp poses */
   MoveItErrorCode pick(const std::string& object, std::vector<moveit_msgs::msg::Grasp> grasps, bool plan_only = false)
   {
+#if 0 //@todo
     return pick(constructPickupGoal(object, std::move(grasps), plan_only));
+#else
+    return moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
+#endif
   }
 
   /** \brief Pick up an object given a PickupGoal
 
       Use as follows: first create the goal with constructPickupGoal(), then set \e possible_grasps and any other
       desired variable in the goal, and finally pass it on to this function */
+#if 0 //@todo
   MoveItErrorCode pick(const moveit_msgs::action::PickupGoal& goal);
+#endif
 
   /** \brief Pick up an object
 
@@ -837,35 +862,52 @@ public:
   /** \brief Place an object somewhere safe in the world (a safe location will be detected) */
   MoveItErrorCode place(const std::string& object, bool plan_only = false)
   {
+#if 0 //@todo
     return place(constructPlaceGoal(object, std::vector<moveit_msgs::msg::PlaceLocation>(), plan_only));
+#else
+    return moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
+#endif
   }
 
   /** \brief Place an object at one of the specified possible locations */
   MoveItErrorCode place(const std::string& object, std::vector<moveit_msgs::msg::PlaceLocation> locations,
                         bool plan_only = false)
   {
+#if 0
     return place(constructPlaceGoal(object, std::move(locations), plan_only));
+#else
+    return moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
+#endif
   }
 
   /** \brief Place an object at one of the specified possible locations */
   MoveItErrorCode place(const std::string& object, const std::vector<geometry_msgs::msg::PoseStamped>& poses,
                         bool plan_only = false)
   {
+#if 0 //@todo
     return place(constructPlaceGoal(object, posesToPlaceLocations(poses), plan_only));
+#else
+    return moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
+#endif
   }
 
   /** \brief Place an object at one of the specified possible location */
   MoveItErrorCode place(const std::string& object, const geometry_msgs::msg::PoseStamped& pose, bool plan_only = false)
   {
+#if 0 //@todo
     return place(constructPlaceGoal(object, posesToPlaceLocations({ pose }), plan_only));
+#else
+    return moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
+#endif
   }
 
   /** \brief Place an object given a PlaceGoal
 
       Use as follows: first create the goal with constructPlaceGoal(), then set \e place_locations and any other
       desired variable in the goal, and finally pass it on to this function */
+#if 0 //@todo
   MoveItErrorCode place(const moveit_msgs::action::PlaceGoal& goal);
-
+#endif
   /** \brief Given the name of an object in the planning scene, make
       the object attached to a link of the robot.  If no link name is
       specified, the end-effector is used. If there is no

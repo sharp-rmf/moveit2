@@ -16,3 +16,4 @@ install(TARGETS ${MOVEIT_LIB_NAME}
 install(DIRECTORY include/ DESTINATION include)
 
 ament_export_libraries(${MOVEIT_LIB_NAME})
+

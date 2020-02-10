@@ -13,7 +13,8 @@ find_package(moveit_msgs REQUIRED)
 find_package(moveit_ros_planning REQUIRED)
 # find_package(moveit_ros_warehouse REQUIRED)
 # find_package(moveit_ros_manipulation REQUIRED)
-# find_package(moveit_ros_move_group REQUIRED)
+find_package(moveit_core REQUIRED)
+find_package(moveit_ros_move_group REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_eigen REQUIRED)
@@ -37,7 +38,7 @@ find_package(Boost REQUIRED COMPONENTS
   date_time
   filesystem
   program_options
-  ${BOOST_PYTHON_COMPONENT}
+#  ${BOOST_PYTHON_COMPONENT}
   system
   thread
 )
@@ -45,22 +46,24 @@ find_package(Eigen3 REQUIRED)
 # find_package(eigenpy REQUIRED)
 
 set(THIS_PACKAGE_INCLUDE_DIRS
-#  py_bindings_tools/include
+  #py_bindings_tools/include
   common_planning_interface_objects/include
-#  planning_scene_interface/include
-#  move_group_interface/include
+  planning_scene_interface/include
+  move_group_interface/include
 #  moveit_cpp/include
+#  ${BOOST_PYTHON_COMPONENT}/include
+# @todo: only uses a string from a single header file, but we dont want to compile the entire manipulation package just for it. remove when its no longer needed
+  ${CMAKE_CURRENT_SOURCE_DIR}/../manipulation/move_group_pick_place_capability/include/
 )
 
 # catkin_python_setup()
 
 
 include_directories(${THIS_PACKAGE_INCLUDE_DIRS})
-
-# add_subdirectory(py_bindings_tools)
+#add_subdirectory(py_bindings_tools)
 add_subdirectory(common_planning_interface_objects)
-# add_subdirectory(planning_scene_interface)
-# add_subdirectory(move_group_interface)
+add_subdirectory(planning_scene_interface)
+add_subdirectory(move_group_interface)
 # add_subdirectory(robot_interface)
 # add_subdirectory(test)
 # add_subdirectory(moveit_cpp)
@@ -80,4 +83,8 @@ ament_export_dependencies(PythonInterp)
 ament_export_dependencies(PythonLibs)
 ament_export_dependencies(Eigen3)
 ament_export_dependencies(Boost)
+
+ament_export_libraries(moveit_common_planning_interface_objects moveit_planning_scene_interface moveit_move_group_interface)
+
 ament_package()
+

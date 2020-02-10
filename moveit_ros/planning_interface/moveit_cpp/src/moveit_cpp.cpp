@@ -91,8 +91,10 @@ MoveItCpp::MoveItCpp(const Options& options, const ros::NodeHandle& /*unused*/,
   }
 
   // TODO(henningkayser): configure trajectory execution manager
+#if 0 //@todo
   trajectory_execution_manager_.reset(new trajectory_execution_manager::TrajectoryExecutionManager(
       robot_model_, planning_scene_monitor_->getStateMonitor()));
+#endif
 
   ROS_INFO_NAMED(LOGNAME, "MoveItCpp running");
 }

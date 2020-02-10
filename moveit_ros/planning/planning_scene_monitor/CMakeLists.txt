@@ -5,6 +5,7 @@ add_library(${MOVEIT_LIB_NAME} SHARED
   src/current_state_monitor.cpp
   src/trajectory_monitor.cpp
 )
+target_link_libraries(${MOVEIT_LIB_NAME} moveit_robot_model_loader)
 set_target_properties(${MOVEIT_LIB_NAME} PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
 ament_target_dependencies(${MOVEIT_LIB_NAME}
   moveit_ros_occupancy_map_monitor
@@ -38,3 +39,4 @@ install(TARGETS demo_scene
 )
 
 install(DIRECTORY include/ DESTINATION include)
+ament_export_dependencies(${MOVEIT_LIB_NAME})

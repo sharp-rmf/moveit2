@@ -40,6 +40,7 @@
 
 int main(int argc, char** argv)
 {
+#if 0 //@todo
   ros::init(argc, argv, "test_trajectory_execution_manager");
 
   ros::AsyncSpinner spinner(1);
@@ -102,6 +103,6 @@ int main(int argc, char** argv)
     ROS_ERROR("Fail!");
 
   ros::waitForShutdown();
-
+#endif
   return 0;
 }

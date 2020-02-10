@@ -33,9 +33,11 @@
  *********************************************************************/
 
 /* Author: Ioan Sucan */
-
+#if 0 //@todo
 #include "test_moveit_controller_manager.h"
+#endif
 #include <pluginlib/class_list_macros.hpp>
-
+#if 0 //@todo
 PLUGINLIB_EXPORT_CLASS(test_moveit_controller_manager::TestMoveItControllerManager,
                        moveit_controller_manager::MoveItControllerManager);
+#endif

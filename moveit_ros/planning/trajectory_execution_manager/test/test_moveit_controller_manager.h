@@ -37,7 +37,7 @@
 #pragma once
 
 #include <moveit/controller_manager/controller_manager.h>
-
+#if 0 //@todo
 namespace test_moveit_controller_manager
 {
 class TestMoveItControllerHandle : public moveit_controller_manager::MoveItControllerHandle
@@ -159,4 +159,5 @@ protected:
   std::map<std::string, int> controllers_;
   std::map<std::string, std::vector<std::string> > controller_joints_;
 };
+#endif
 }

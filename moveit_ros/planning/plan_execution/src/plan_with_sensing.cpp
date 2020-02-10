@@ -38,17 +38,19 @@
 #include <moveit/trajectory_processing/trajectory_tools.h>
 #include <moveit/collision_detection/collision_tools.h>
 #include <boost/algorithm/string/join.hpp>
-
+#if 0 //@todo
 #include <dynamic_reconfigure/server.h>
 #include <moveit_ros_planning/SenseForPlanDynamicReconfigureConfig.h>
-
+#endif
 namespace plan_execution
 {
+#if 0 //@todo
 using namespace moveit_ros_planning;
-
+#endif
 class PlanWithSensing::DynamicReconfigureImpl
 {
 public:
+#if 0 //@todo
   DynamicReconfigureImpl(PlanWithSensing* owner)
     : owner_(owner), dynamic_reconfigure_server_(ros::NodeHandle("~/sense_for_plan"))
   {
@@ -67,12 +69,18 @@ private:
 
   PlanWithSensing* owner_;
   dynamic_reconfigure::Server<SenseForPlanDynamicReconfigureConfig> dynamic_reconfigure_server_;
+#else
+  DynamicReconfigureImpl(PlanWithSensing* owner)
+    : owner_(owner)
+    { }
+  PlanWithSensing* owner_;    
+#endif
 };
 }  // namespace plan_execution
 
 plan_execution::PlanWithSensing::PlanWithSensing(
     const trajectory_execution_manager::TrajectoryExecutionManagerPtr& trajectory_execution)
-  : node_handle_("~"), trajectory_execution_manager_(trajectory_execution)
+  : node_(new rclcpp::Node("~")), trajectory_execution_manager_(trajectory_execution)
 {
   default_max_look_attempts_ = 3;
   default_max_safe_path_cost_ = 0.5;
@@ -84,7 +92,7 @@ plan_execution::PlanWithSensing::PlanWithSensing(
   display_cost_sources_ = false;
 
   // load the sensor manager plugin, if needed
-  if (node_handle_.hasParam("moveit_sensor_manager"))
+  if (node_->has_parameter("moveit_sensor_manager"))
   {
     try
     {
@@ -93,26 +101,26 @@ plan_execution::PlanWithSensing::PlanWithSensing(
     }
     catch (pluginlib::PluginlibException& ex)
     {
-      ROS_ERROR_STREAM("Exception while creating sensor manager plugin loader: " << ex.what());
+      RCLCPP_ERROR_STREAM(node_->get_logger(), "Exception while creating sensor manager plugin loader: " << ex.what());
     }
     if (sensor_manager_loader_)
     {
       std::string manager;
-      if (node_handle_.getParam("moveit_sensor_manager", manager))
+      if (node_->get_parameter("moveit_sensor_manager", manager))
         try
         {
           sensor_manager_ = sensor_manager_loader_->createUniqueInstance(manager);
         }
         catch (pluginlib::PluginlibException& ex)
         {
-          ROS_ERROR_STREAM("Exception while loading sensor manager '" << manager << "': " << ex.what());
+          RCLCPP_ERROR_STREAM(node_->get_logger(), "Exception while loading sensor manager '" << manager << "': " << ex.what());
         }
     }
     if (sensor_manager_)
     {
       std::vector<std::string> sensors;
       sensor_manager_->getSensorsList(sensors);
-      ROS_INFO_STREAM("PlanWithSensing is aware of the following sensors: " << boost::algorithm::join(sensors, ", "));
+      RCLCPP_INFO_STREAM(node_->get_logger(), "PlanWithSensing is aware of the following sensors: " << boost::algorithm::join(sensors, ", "));
     }
   }
 
@@ -130,9 +138,14 @@ void plan_execution::PlanWithSensing::displayCostSources(bool flag)
   if (flag && !display_cost_sources_)
     // publisher for cost sources
     cost_sources_publisher_ =
-        node_handle_.advertise<visualization_msgs::MarkerArray>("display_cost_sources", 100, true);
+        node_->create_publisher<visualization_msgs::msg::MarkerArray>("display_cost_sources", 100);
   else if (!flag && display_cost_sources_)
-    cost_sources_publisher_.shutdown();
+  #if 0 //@todo
+    cost_sources_publisher_->shutdown();
+  #else
+  {}
+  #endif
+
   display_cost_sources_ = flag;
 }
 
@@ -194,31 +207,31 @@ bool plan_execution::PlanWithSensing::computePlan(ExecutableMotionPlan& plan,
     // display the costs if needed
     if (display_cost_sources_)
     {
-      visualization_msgs::MarkerArray arr;
+      visualization_msgs::msg::MarkerArray arr;
       collision_detection::getCostMarkers(arr, plan.planning_scene_->getPlanningFrame(), cost_sources);
-      cost_sources_publisher_.publish(arr);
+      cost_sources_publisher_->publish(arr);
     }
 
     double cost = collision_detection::getTotalCost(cost_sources);
-    ROS_DEBUG("The total cost of the trajectory is %lf.", cost);
+    RCLCPP_DEBUG(node_->get_logger(), "The total cost of the trajectory is %lf.", cost);
     if (previous_cost > 0.0)
-      ROS_DEBUG("The change in the trajectory cost is %lf after the perception step.", cost - previous_cost);
+      RCLCPP_DEBUG(node_->get_logger(), "The change in the trajectory cost is %lf after the perception step.", cost - previous_cost);
     if (cost > max_safe_path_cost && look_attempts < max_look_attempts)
     {
       ++look_attempts;
-      ROS_INFO("The cost of the trajectory is %lf, which is above the maximum safe cost of %lf. Attempt %u (of at most "
+      RCLCPP_INFO(node_->get_logger(), "The cost of the trajectory is %lf, which is above the maximum safe cost of %lf. Attempt %u (of at most "
                "%u) at looking around.",
                cost, max_safe_path_cost, look_attempts, max_look_attempts);
 
       bool looked_at_result = lookAt(cost_sources, plan.planning_scene_->getPlanningFrame());
       if (looked_at_result)
-        ROS_INFO("Sensor was succesfully actuated. Attempting to recompute a motion plan.");
+        RCLCPP_INFO(node_->get_logger(), "Sensor was succesfully actuated. Attempting to recompute a motion plan.");
       else
       {
         if (look_around_failed)
-          ROS_WARN("Looking around seems to keep failing. Giving up.");
+          RCLCPP_WARN(node_->get_logger(), "Looking around seems to keep failing. Giving up.");
         else
-          ROS_WARN("Looking around seems to have failed. Attempting to recompute a motion plan anyway.");
+          RCLCPP_WARN(node_->get_logger(), "Looking around seems to have failed. Attempting to recompute a motion plan anyway.");
       }
       if (looked_at_result || !look_around_failed)
       {
@@ -248,7 +261,7 @@ bool plan_execution::PlanWithSensing::lookAt(const std::set<collision_detection:
 {
   if (!sensor_manager_)
   {
-    ROS_WARN("It seems looking around would be useful, but no MoveIt Sensor Manager is loaded. Did you set "
+    RCLCPP_WARN(node_->get_logger(), "It seems looking around would be useful, but no MoveIt Sensor Manager is loaded. Did you set "
              "~moveit_sensor_manager ?");
     return false;
   }
@@ -258,13 +271,15 @@ bool plan_execution::PlanWithSensing::lookAt(const std::set<collision_detection:
 
   std::vector<std::string> names;
   sensor_manager_->getSensorsList(names);
-  geometry_msgs::PointStamped point;
+  geometry_msgs::msg::PointStamped point;
   for (const std::string& name : names)
     if (collision_detection::getSensorPositioning(point.point, cost_sources))
     {
-      point.header.stamp = ros::Time::now();
+      point.header.stamp = node_->get_clock()->now();
       point.header.frame_id = frame_id;
-      ROS_DEBUG_STREAM("Pointing sensor " << name << " to:\n" << point);
+      #if 0 //@todo
+      RCLCPP_DEBUG_STREAM(node_->get_logger(), "Pointing sensor " << name << " to:\n" << point);
+      #endif
       moveit_msgs::msg::RobotTrajectory sensor_trajectory;
       if (sensor_manager_->pointSensorTo(name, point, sensor_trajectory))
       {

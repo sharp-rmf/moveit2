@@ -40,16 +40,19 @@
 #include <moveit/collision_detection/collision_tools.h>
 #include <moveit/utils/message_checks.h>
 #include <boost/algorithm/string/join.hpp>
-
+#if 0 //@todo
 #include <dynamic_reconfigure/server.h>
 #include <moveit_ros_planning/PlanExecutionDynamicReconfigureConfig.h>
-
+#endif
 namespace plan_execution
 {
+#if 0 //@todo
 using namespace moveit_ros_planning;
+#endif
 
 class PlanExecution::DynamicReconfigureImpl
 {
+#if 0 //@todo
 public:
   DynamicReconfigureImpl(PlanExecution* owner)
     : owner_(owner), dynamic_reconfigure_server_(ros::NodeHandle("~/plan_execution"))
@@ -67,20 +70,31 @@ private:
 
   PlanExecution* owner_;
   dynamic_reconfigure::Server<PlanExecutionDynamicReconfigureConfig> dynamic_reconfigure_server_;
+#else
+  DynamicReconfigureImpl(PlanExecution* owner)
+  : owner_(owner)
+  {
+
+  }
+  PlanExecution* owner_;
+#endif
 };
 }  // namespace plan_execution
 
 plan_execution::PlanExecution::PlanExecution(
     const planning_scene_monitor::PlanningSceneMonitorPtr& planning_scene_monitor,
     const trajectory_execution_manager::TrajectoryExecutionManagerPtr& trajectory_execution)
-  : node_handle_("~")
+  : node_(new rclcpp::Node("plan_execution"))
   , planning_scene_monitor_(planning_scene_monitor)
+#if 0 //@todo
   , trajectory_execution_manager_(trajectory_execution)
 {
   if (!trajectory_execution_manager_)
     trajectory_execution_manager_.reset(new trajectory_execution_manager::TrajectoryExecutionManager(
         planning_scene_monitor_->getRobotModel(), planning_scene_monitor_->getStateMonitor()));
-
+#else
+{
+#endif
   default_max_replan_attempts_ = 5;
 
   preempt_requested_ = false;
@@ -90,7 +104,9 @@ plan_execution::PlanExecution::PlanExecution(
   planning_scene_monitor_->addUpdateCallback(boost::bind(&PlanExecution::planningSceneUpdatedCallback, this, _1));
 
   // start the dynamic-reconfigure server
+#if 0 //@todo
   reconfigure_impl_ = new DynamicReconfigureImpl(this);
+#endif
 }
 
 plan_execution::PlanExecution::~PlanExecution()
@@ -175,7 +191,7 @@ void plan_execution::PlanExecution::planAndExecuteHelper(ExecutableMotionPlan& p
   do
   {
     replan_attempts++;
-    ROS_INFO_NAMED("plan_execution", "Planning attempt %u of at most %u", replan_attempts, max_replan_attempts);
+    RCLCPP_INFO(node_->get_logger(), "Planning attempt %u of at most %u", replan_attempts, max_replan_attempts);
 
     if (opt.before_plan_callback_)
       opt.before_plan_callback_();
@@ -202,8 +218,8 @@ void plan_execution::PlanExecution::planAndExecuteHelper(ExecutableMotionPlan& p
       if (plan.error_code_.val == moveit_msgs::msg::MoveItErrorCodes::UNABLE_TO_AQUIRE_SENSOR_DATA &&
           opt.replan_delay_ > 0.0)
       {
-        ros::WallDuration d(opt.replan_delay_);
-        d.sleep();
+        std::chrono::duration<double> d(opt.replan_delay_);
+        rclcpp::sleep_for(std::chrono::duration_cast<std::chrono::nanoseconds>(d), rclcpp::Context::SharedPtr(nullptr));
       }
       continue;
     }
@@ -238,18 +254,18 @@ void plan_execution::PlanExecution::planAndExecuteHelper(ExecutableMotionPlan& p
       // othewrise, we wait (if needed)
       if (opt.replan_delay_ > 0.0)
       {
-        ROS_INFO_NAMED("plan_execution", "Waiting for a %lf seconds before attempting a new plan ...",
+        RCLCPP_INFO(node_->get_logger(), "Waiting for a %lf seconds before attempting a new plan ...",
                        opt.replan_delay_);
-        ros::WallDuration d(opt.replan_delay_);
-        d.sleep();
-        ROS_INFO_NAMED("plan_execution", "Done waiting");
+        std::chrono::duration<double> d(opt.replan_delay_);
+        rclcpp::sleep_for(std::chrono::duration_cast<std::chrono::nanoseconds>(d), rclcpp::Context::SharedPtr(nullptr));
+        RCLCPP_INFO(node_->get_logger(), "Done waiting");
       }
     }
   } while (!preempt_requested_ && max_replan_attempts > replan_attempts);
 
   if (preempt_requested_)
   {
-    ROS_DEBUG_NAMED("plan_execution", "PlanExecution was preempted");
+    RCLCPP_DEBUG(node_->get_logger(), "PlanExecution was preempted");
     plan.error_code_.val = moveit_msgs::msg::MoveItErrorCodes::PREEMPTED;
   }
 
@@ -257,9 +273,9 @@ void plan_execution::PlanExecution::planAndExecuteHelper(ExecutableMotionPlan& p
     opt.done_callback_();
 
   if (plan.error_code_.val == moveit_msgs::msg::MoveItErrorCodes::SUCCESS)
-    ROS_DEBUG_NAMED("plan_execution", "PlanExecution finished successfully.");
+    RCLCPP_DEBUG(node_->get_logger(), "PlanExecution finished successfully.");
   else
-    ROS_DEBUG_NAMED("plan_execution", "PlanExecution terminating with error code %d - '%s'", plan.error_code_.val,
+    RCLCPP_DEBUG(node_->get_logger(), "PlanExecution terminating with error code %d - '%s'", plan.error_code_.val,
                     getErrorCodeString(plan.error_code_).c_str());
 }
 
@@ -319,7 +335,7 @@ moveit_msgs::msg::MoveItErrorCodes plan_execution::PlanExecution::executeAndMoni
 
   if (!trajectory_execution_manager_)
   {
-    ROS_ERROR_NAMED("plan_execution", "No trajectory execution manager");
+    RCLCPP_ERROR(node_->get_logger(), "No trajectory execution manager");
     result.val = moveit_msgs::msg::MoveItErrorCodes::CONTROL_FAILED;
     return result;
   }
@@ -374,7 +390,7 @@ moveit_msgs::msg::MoveItErrorCodes plan_execution::PlanExecution::executeAndMoni
     if (!trajectory_execution_manager_->push(msg))
     {
       trajectory_execution_manager_->clear();
-      ROS_ERROR_STREAM_NAMED("plan_execution", "Apparently trajectory initialization failed");
+      RCLCPP_ERROR_STREAM(node_->get_logger(), "Apparently trajectory initialization failed");
       execution_complete_ = true;
       result.val = moveit_msgs::msg::MoveItErrorCodes::CONTROL_FAILED;
       return result;
@@ -385,7 +401,7 @@ moveit_msgs::msg::MoveItErrorCodes plan_execution::PlanExecution::executeAndMoni
   {
     // Pass current value of reconfigurable parameter plan_execution/record_trajectory_state_frequency
     double sampling_frequency = 0.0;
-    node_handle_.getParam("plan_execution/record_trajectory_state_frequency", sampling_frequency);
+    node_->get_parameter("plan_execution/record_trajectory_state_frequency", sampling_frequency);
     trajectory_monitor_ = std::make_shared<planning_scene_monitor::TrajectoryMonitor>(
         planning_scene_monitor_->getStateMonitor(), sampling_frequency);
   }
@@ -399,9 +415,12 @@ moveit_msgs::msg::MoveItErrorCodes plan_execution::PlanExecution::executeAndMoni
       boost::bind(&PlanExecution::doneWithTrajectoryExecution, this, _1),
       boost::bind(&PlanExecution::successfulTrajectorySegmentExecution, this, &plan, _1));
   // wait for path to be done, while checking that the path does not become invalid
-  ros::Rate r(100);
+  rclcpp::Rate r(100);
   path_became_invalid_ = false;
-  while (node_handle_.ok() && !execution_complete_ && !preempt_requested_ && !path_became_invalid_)
+  #if 0 //@todo: rclcpp::ok might not be the best use
+  while (node_->ok() && !execution_complete_ && !preempt_requested_ && !path_became_invalid_)
+  #endif
+  while (rclcpp::ok() && !execution_complete_ && !preempt_requested_ && !path_became_invalid_)
   {
     r.sleep();
     // check the path if there was an environment update in the meantime
@@ -411,7 +430,7 @@ moveit_msgs::msg::MoveItErrorCodes plan_execution::PlanExecution::executeAndMoni
       std::pair<int, int> current_index = trajectory_execution_manager_->getCurrentExpectedTrajectoryIndex();
       if (!isRemainingPathValid(plan, current_index))
       {
-        ROS_INFO_NAMED("plan_execution", "Trajectory component '%s' is invalid after scene update",
+        RCLCPP_INFO(node_->get_logger(), "Trajectory component '%s' is invalid after scene update",
                        plan.plan_components_[current_index.first].description_.c_str());
         path_became_invalid_ = true;
         break;
@@ -422,18 +441,18 @@ moveit_msgs::msg::MoveItErrorCodes plan_execution::PlanExecution::executeAndMoni
   // stop execution if needed
   if (preempt_requested_)
   {
-    ROS_INFO_NAMED("plan_execution", "Stopping execution due to preempt request");
+    RCLCPP_INFO(node_->get_logger(), "Stopping execution due to preempt request");
     trajectory_execution_manager_->stopExecution();
   }
   else if (path_became_invalid_)
   {
-    ROS_INFO_NAMED("plan_execution", "Stopping execution because the path to execute became invalid"
+    RCLCPP_INFO(node_->get_logger(), "Stopping execution because the path to execute became invalid"
                                      "(probably the environment changed)");
     trajectory_execution_manager_->stopExecution();
   }
   else if (!execution_complete_)
   {
-    ROS_WARN_NAMED("plan_execution", "Stopping execution due to unknown reason."
+    RCLCPP_WARN(node_->get_logger(), "Stopping execution due to unknown reason."
                                      "Possibly the node is about to shut down.");
     trajectory_execution_manager_->stopExecution();
   }
@@ -490,17 +509,17 @@ void plan_execution::PlanExecution::successfulTrajectorySegmentExecution(const E
 {
   if (plan->plan_components_.empty())
   {
-    ROS_WARN_NAMED("plan_execution", "Length of provided motion plan is zero.");
+    RCLCPP_WARN(node_->get_logger(), "Length of provided motion plan is zero.");
     return;
   }
 
   // if any side-effects are associated to the trajectory part that just completed, execute them
-  ROS_DEBUG_NAMED("plan_execution", "Completed '%s'", plan->plan_components_[index].description_.c_str());
+  RCLCPP_DEBUG(node_->get_logger(), "Completed '%s'", plan->plan_components_[index].description_.c_str());
   if (plan->plan_components_[index].effect_on_success_)
     if (!plan->plan_components_[index].effect_on_success_(plan))
     {
       // execution of side-effect failed
-      ROS_ERROR_NAMED("plan_execution", "Execution of path-completion side-effect failed. Preempting.");
+      RCLCPP_ERROR(node_->get_logger(), "Execution of path-completion side-effect failed. Preempting.");
       preempt_requested_ = true;
       return;
     }
@@ -513,7 +532,7 @@ void plan_execution::PlanExecution::successfulTrajectorySegmentExecution(const E
     std::pair<int, int> next_index(static_cast<int>(index), 0);
     if (!isRemainingPathValid(*plan, next_index))
     {
-      ROS_INFO_NAMED("plan_execution", "Upcoming trajectory component '%s' is invalid",
+      RCLCPP_INFO(node_->get_logger(), "Upcoming trajectory component '%s' is invalid",
                      plan->plan_components_[next_index.first].description_.c_str());
       path_became_invalid_ = true;
     }

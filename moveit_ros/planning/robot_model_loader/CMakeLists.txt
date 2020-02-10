@@ -23,3 +23,4 @@ install(TARGETS ${MOVEIT_LIB_NAME}
   RUNTIME DESTINATION bin)
 
 install(DIRECTORY include/ DESTINATION include)
+ament_export_dependencies(${MOVEIT_LIB_NAME})

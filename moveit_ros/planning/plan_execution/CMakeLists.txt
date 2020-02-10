@@ -8,11 +8,11 @@ target_link_libraries(${MOVEIT_LIB_NAME}
   moveit_planning_pipeline
   moveit_trajectory_execution_manager
   moveit_planning_scene_monitor
-  ${catkin_LIBRARIES} ${Boost_LIBRARIES}
+  ${Boost_LIBRARIES}
   )
 
 install(TARGETS ${MOVEIT_LIB_NAME}
-        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})
-install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin)
+install(DIRECTORY include/ DESTINATION include)

@@ -122,7 +122,7 @@ void planning_pipeline::PlanningPipeline::configure()
   try
   {
     planner_instance_ = planner_plugin_loader_->createUniqueInstance(planner_plugin_name_);
-    if (!planner_instance_->initialize(robot_model_, node_->get_namespace()))
+    if (!planner_instance_->initialize(robot_model_, node_))
       throw std::runtime_error("Unable to initialize planning plugin");
     RCLCPP_INFO(node_->get_logger(), "Using planning interface '%s'", planner_instance_->getDescription().c_str());
   }
@@ -159,7 +159,7 @@ void planning_pipeline::PlanningPipeline::configure()
         catch (pluginlib::PluginlibException& ex)
         {
           RCLCPP_ERROR(node_->get_logger(), "Exception while loading planning adapter plugin '%s': %s",
-                       adapter_plugin_names, ex.what());
+                       adapter_plugin_name, ex.what());
         }
         if (ad)
         {
@@ -189,8 +189,9 @@ void planning_pipeline::PlanningPipeline::displayComputedMotionPlans(bool flag)
   {
     custom_qos_profile_ = rmw_qos_profile_default;
     custom_qos_profile_.depth = 10;
+    rclcpp::QoS qos(rclcpp::QoSInitialization::from_rmw(custom_qos_profile_), custom_qos_profile_);
     display_path_publisher_ =
-        node_->create_publisher<moveit_msgs::msg::DisplayTrajectory>(DISPLAY_PATH_TOPIC, custom_qos_profile_);
+        node_->create_publisher<moveit_msgs::msg::DisplayTrajectory>(DISPLAY_PATH_TOPIC, qos);
   }
   display_computed_motion_plans_ = flag;
 }
@@ -203,8 +204,9 @@ void planning_pipeline::PlanningPipeline::publishReceivedRequests(bool flag)
   {
     custom_qos_profile_ = rmw_qos_profile_default;
     custom_qos_profile_.depth = 10;
+    rclcpp::QoS qos(rclcpp::QoSInitialization::from_rmw(custom_qos_profile_), custom_qos_profile_);
     received_request_publisher_ =
-        node_->create_publisher<moveit_msgs::msg::MotionPlanRequest>(MOTION_PLAN_REQUEST_TOPIC, custom_qos_profile_);
+        node_->create_publisher<moveit_msgs::msg::MotionPlanRequest>(MOTION_PLAN_REQUEST_TOPIC, qos);
   }
   publish_received_requests_ = flag;
 }
@@ -217,8 +219,9 @@ void planning_pipeline::PlanningPipeline::checkSolutionPaths(bool flag)
   {
     custom_qos_profile_ = rmw_qos_profile_default;
     custom_qos_profile_.depth = 100;
+    rclcpp::QoS qos(rclcpp::QoSInitialization::from_rmw(custom_qos_profile_), custom_qos_profile_);
     contacts_publisher_ =
-        node_->create_publisher<visualization_msgs::msg::MarkerArray>(MOTION_CONTACTS_TOPIC, custom_qos_profile_);
+        node_->create_publisher<visualization_msgs::msg::MarkerArray>(MOTION_CONTACTS_TOPIC, qos);
   }
   check_solution_paths_ = flag;
 }
@@ -387,7 +390,7 @@ bool planning_pipeline::PlanningPipeline::generatePlan(const planning_scene::Pla
         stacked_constraints = true;
     }
     if (stacked_constraints)
-      ROS_WARN("More than one constraint is set. If your move_group does not have multiple end effectors/arms, this is "
+      RCLCPP_WARN(node_->get_logger(), "More than one constraint is set. If your move_group does not have multiple end effectors/arms, this is "
                "unusual. Are you using a move_group_interface and forgetting to call clearPoseTargets() or "
                "equivalent?");
   }

@@ -148,7 +148,8 @@ private:
   void doneWithTrajectoryExecution(const moveit_controller_manager::ExecutionStatus& status);
   void successfulTrajectorySegmentExecution(const ExecutableMotionPlan* plan, std::size_t index);
 
-  ros::NodeHandle node_handle_;
+  //ros::NodeHandle node_handle_;
+  rclcpp::Node::SharedPtr node_;
   planning_scene_monitor::PlanningSceneMonitorPtr planning_scene_monitor_;
   trajectory_execution_manager::TrajectoryExecutionManagerPtr trajectory_execution_manager_;
   planning_scene_monitor::TrajectoryMonitorPtr trajectory_monitor_;

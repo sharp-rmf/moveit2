@@ -52,27 +52,20 @@
 #include <moveit/trajectory_execution_manager/trajectory_execution_manager.h>
 #include <moveit/common_planning_interface_objects/common_objects.h>
 #include <moveit/robot_state/conversions.h>
-#if 0 //@todo
-#include <moveit_msgs/action/pickup_action.h>
-#include <moveit_msgs/action/execute_trajectory_action.h>
-#include <moveit_msgs/action/place_action.h>
-#endif
+
 #include <moveit_msgs/srv/execute_known_trajectory.hpp>
 #include <moveit_msgs/srv/query_planner_interfaces.hpp>
 #include <moveit_msgs/srv/get_cartesian_path.hpp>
 #include <moveit_msgs/srv/grasp_planning.hpp>
 #include <moveit_msgs/srv/get_planner_params.hpp>
 #include <moveit_msgs/srv/set_planner_params.hpp>
+#include <moveit_msgs/msg/place_location.hpp>
 
 #include <std_msgs/msg/string.hpp>
 #include <geometry_msgs/msg/transform_stamped.h>
 #include <tf2/utils.h>
 #include <tf2_eigen/tf2_eigen.h>
 #include <tf2_ros/transform_listener.h>
-#if 0 //@todo
-#include <ros/console.h>
-#include <ros/ros.h>
-#endif
 
 namespace moveit
 {
@@ -101,7 +94,7 @@ public:
                          const rclcpp::Duration& wait_for_servers)
     : opt_(opt), node_(opt.node_), tf_buffer_(tf_buffer)
   {
-#if 0 //@todo
+#if 0 //@todo: see common_planning_interface/common_objects.h
     robot_model_ = opt.robot_model_ ? opt.robot_model_ : getSharedRobotModel(opt.robot_description_);
 #else
     robot_model_ = opt.robot_model_ ? opt.robot_model_ : nullptr;
@@ -147,30 +140,30 @@ public:
     attached_object_publisher_ = node_->create_publisher<moveit_msgs::msg::AttachedCollisionObject>(
         planning_scene_monitor::PlanningSceneMonitor::DEFAULT_ATTACHED_COLLISION_OBJECT_TOPIC, 1);
 
-#if 0 //@todo
+#if 0 //@todo: see common_planning_interface/common_objects.h
     current_state_monitor_ = getSharedStateMonitor(robot_model_, tf_buffer_, node_);
 #endif
     rclcpp::Time timeout_for_servers = node_->get_clock()->now() + wait_for_servers;
     if (wait_for_servers == rclcpp::Duration(std::chrono::duration_values<double>::max())) //@todo ; no rclcpp::Duration() representation for infinite time
       timeout_for_servers = rclcpp::Time();  // wait for ever
     double allotted_time = wait_for_servers.seconds();
-#if 0 //@todo
-    move_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::action::MoveGroupAction>(
-        node_, move_group::MOVE_ACTION, false));
-    waitForAction(move_action_client_, move_group::MOVE_ACTION, timeout_for_servers, allotted_time);
 
-    pick_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::action::PickupAction>(
-        node_, move_group::PICKUP_ACTION, false));
-    waitForAction(pick_action_client_, move_group::PICKUP_ACTION, timeout_for_servers, allotted_time);
+    move_action_client_ = rclcpp_action::create_client<moveit_msgs::action::MoveGroup>(
+        node_, move_group::MOVE_ACTION);
+    move_action_client_->wait_for_action_server(std::chrono::nanoseconds(timeout_for_servers.nanoseconds()));
 
-    place_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::action::PlaceAction>(
-        node_, move_group::PLACE_ACTION, false));
-    waitForAction(place_action_client_, move_group::PLACE_ACTION, timeout_for_servers, allotted_time);
+    pick_action_client_ = rclcpp_action::create_client<moveit_msgs::action::Pickup>(
+        node_, move_group::PICKUP_ACTION);
+    pick_action_client_->wait_for_action_server(std::chrono::nanoseconds(timeout_for_servers.nanoseconds()));
 
-    execute_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::action::ExecuteTrajectoryAction>(
-        node_, move_group::EXECUTE_ACTION_NAME, false));
-    waitForAction(execute_action_client_, move_group::EXECUTE_ACTION_NAME, timeout_for_servers, allotted_time);
-#endif
+    place_action_client_ = rclcpp_action::create_client<moveit_msgs::action::Place>(
+        node_, move_group::PLACE_ACTION);
+    place_action_client_->wait_for_action_server(std::chrono::nanoseconds(timeout_for_servers.nanoseconds()));
+
+    execute_action_client_ = rclcpp_action::create_client<moveit_msgs::action::ExecuteTrajectory>(
+        node_, move_group::EXECUTE_ACTION_NAME);
+    execute_action_client_->wait_for_action_server(std::chrono::nanoseconds(timeout_for_servers.nanoseconds()));
+    
     query_service_ =
         node_->create_client<moveit_msgs::srv::QueryPlannerInterfaces>(move_group::QUERY_PLANNERS_SERVICE_NAME);
     get_params_service_ =
@@ -275,12 +268,12 @@ public:
   {
     return joint_model_group_;
   }
-#if 0 //@todo
-  actionlib::SimpleActionClient<moveit_msgs::action::MoveGroupAction>& getMoveGroupClient() const
+
+  rclcpp_action::Client<moveit_msgs::action::MoveGroup>& getMoveGroupClient() const
   {
     return *move_action_client_;
   }
-#endif
+
   bool getInterfaceDescription(moveit_msgs::msg::PlannerInterfaceDescription& desc)
   {
     auto req = std::make_shared<moveit_msgs::srv::QueryPlannerInterfaces::Request>();
@@ -618,8 +611,7 @@ public:
     std::vector<moveit_msgs::msg::PlaceLocation> locations;
     for (const geometry_msgs::msg::PoseStamped& pose : poses)
     {
-#if 0 //@todo
-      moveit_msgs::action::PlaceLocation location;
+      moveit_msgs::msg::PlaceLocation location;
       location.pre_place_approach.direction.vector.z = -1.0;
       location.post_place_retreat.direction.vector.x = -1.0;
       location.pre_place_approach.direction.header.frame_id = getRobotModel()->getModelFrame();
@@ -633,84 +625,50 @@ public:
 
       location.place_pose = pose;
       locations.push_back(location);
-#endif
     }
     RCLCPP_DEBUG(rclcpp::get_logger("move_group_interface"), "Move group interface has %u place locations",
                     (unsigned int)locations.size());
     return locations;
   }
-#if 0 //@todo
-  MoveItErrorCode place(const moveit_msgs::action::PlaceGoal& goal)
+
+  MoveItErrorCode place(const moveit_msgs::action::Place::Goal& goal)
   {
-#if 0 //@todo
-    if (!place_action_client_)
+    if (!place_action_client_ || !place_action_client_->action_server_is_ready())
     {
-      RCLCPP_ERROR_STREAM(rclcpp::get_logger("move_group_interface"), "Place action client not found");
+      RCLCPP_ERROR_STREAM(rclcpp::get_logger("move_group_interface"), "Place action client not found/not ready");
       return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
     }
-    if (!place_action_client_->isServerConnected())
+    
+    int64_t timeout = 3.0;
+    auto future = place_action_client_->async_send_goal(goal);
+    if (rclcpp::spin_until_future_complete(node_, future, std::chrono::seconds(timeout)) !=
+      rclcpp::executor::FutureReturnCode::SUCCESS)
     {
-      RCLCPP_ERROR_STREAM(rclcpp::get_logger("move_group_interface"), "Place action server not connected");
+      RCLCPP_ERROR_STREAM(rclcpp::get_logger("move_group_interface"), "Place action timeout reached");
       return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
     }
-
-    place_action_client_->sendGoal(goal);
-    RCLCPP_DEBUG(rclcpp::get_logger("move_group_interface"), "Sent place goal with %d locations", (int)goal.place_locations.size());
-    if (!place_action_client_->waitForResult())
-    {
-      RCLCPP_INFO_STREAM(rclcpp::get_logger("move_group_interface"), "Place action returned early");
-    }
-    if (place_action_client_->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-    {
-      return MoveItErrorCode(place_action_client_->getResult()->error_code);
-    }
-    else
-    {
-      RCLCPP_WARN_STREAM(rclcpp::get_logger("move_group_interface"), "Fail: " << place_action_client_->getState().toString() << ": "
-                                                             << place_action_client_->getState().getText());
-      return MoveItErrorCode(place_action_client_->getResult()->error_code);
-    }
-#else
-    return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
-#endif
+    return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::SUCCESS);
   }
-#endif
 
-#if 0 //@todo
-  MoveItErrorCode pick(const moveit_msgs::action::PickupGoal& goal)
+  MoveItErrorCode pick(const moveit_msgs::action::Pickup::Goal& goal)
   {
-#if 0 //@todo
-    if (!pick_action_client_)
+    if (!pick_action_client_ || !pick_action_client_->action_server_is_ready())
     {
-      RCLCPP_ERROR_STREAM(rclcpp::get_logger("move_group_interface"), "Pick action client not found");
-      return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
-    }
-    if (!pick_action_client_->isServerConnected())
-    {
-      RCLCPP_ERROR_STREAM(rclcpp::get_logger("move_group_interface"), "Pick action server not connected");
+      RCLCPP_ERROR_STREAM(rclcpp::get_logger("move_group_interface"), "Pick action client not found/not ready");
       return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
     }
 
-    pick_action_client_->sendGoal(goal);
-    if (!pick_action_client_->waitForResult())
+    int64_t timeout = 3.0;
+    auto future = pick_action_client_->async_send_goal(goal);
+    if (rclcpp::spin_until_future_complete(node_, future, std::chrono::seconds(timeout)) !=
+      rclcpp::executor::FutureReturnCode::SUCCESS)
     {
-      RCLCPP_INFO_STREAM(rclcpp::get_logger("move_group_interface"), "Pickup action returned early");
+      RCLCPP_ERROR_STREAM(rclcpp::get_logger("move_group_interface"), "Pick action timeout reached");
+      return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
     }
-    if (pick_action_client_->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-    {
-      return MoveItErrorCode(pick_action_client_->getResult()->error_code);
-    }
-    else
-    {
-      RCLCPP_WARN_STREAM(rclcpp::get_logger("move_group_interface"), "Fail: " << pick_action_client_->getState().toString() << ": "
-                                                             << pick_action_client_->getState().getText());
-      return MoveItErrorCode(pick_action_client_->getResult()->error_code);
-    }
-#else
-    return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
-#endif
+    return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::SUCCESS);
   }
-#endif
+
 
   MoveItErrorCode planGraspsAndPick(const std::string& object, bool plan_only = false)
   {
@@ -766,69 +724,61 @@ public:
       RCLCPP_ERROR(rclcpp::get_logger("move_group_interface"), "Grasp planning failed. Unable to pick.");
       return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
     }
-#if 0 //@todo
-    return pick(constructPickupGoal(object.id, std::move(response.grasps), plan_only));
-#else
-    return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
-#endif
+    return pick(constructPickupGoal(object.id, std::move(response->grasps), plan_only));
   }
 
   MoveItErrorCode plan(Plan& plan)
   {
-#if 0 //@todo
-    if (!move_action_client_)
+    if (!move_action_client_ || !move_action_client_->action_server_is_ready())
     {
+      RCLCPP_INFO_STREAM(rclcpp::get_logger("move_group_interface"), "MoveGroup action client/server not ready");
       return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
     }
-    if (!move_action_client_->isServerConnected())
-    {
-      return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
-    }
-
-    moveit_msgs::action::MoveGroupGoal goal;
+    
+    moveit_msgs::action::MoveGroup::Goal goal;
     constructGoal(goal);
     goal.planning_options.plan_only = true;
     goal.planning_options.look_around = false;
     goal.planning_options.replan = false;
     goal.planning_options.planning_scene_diff.is_diff = true;
     goal.planning_options.planning_scene_diff.robot_state.is_diff = true;
+    
+    int64_t timeout = 3;
+    auto future = move_action_client_->async_send_goal(goal);
+    if (rclcpp::spin_until_future_complete(node_, future, std::chrono::seconds(timeout)) !=
+      rclcpp::executor::FutureReturnCode::SUCCESS)
+    {
+      RCLCPP_ERROR_STREAM(rclcpp::get_logger("move_group_interface"), "MoveGroup action failed or timeout reached");
+      return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
+    }
 
-    move_action_client_->sendGoal(goal);
-    if (!move_action_client_->waitForResult())
+    auto goal_handle = future.get();
+    auto result_future = move_action_client_->async_get_result(goal_handle);
+    auto wait_result = rclcpp::spin_until_future_complete(node_, result_future,
+     std::chrono::seconds(timeout));
+    if (wait_result != rclcpp::executor::FutureReturnCode::SUCCESS)
     {
-      RCLCPP_INFO_STREAM(rclcpp::get_logger("move_group_interface"), "MoveGroup action returned early");
+      RCLCPP_WARN_STREAM(rclcpp::get_logger("move_group_interface"), 
+                      "ErrorCode: " << wait_result);
     }
-    if (move_action_client_->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-    {
-      plan.trajectory_ = move_action_client_->getResult()->planned_trajectory;
-      plan.start_state_ = move_action_client_->getResult()->trajectory_start;
-      plan.planning_time_ = move_action_client_->getResult()->planning_time;
-      return MoveItErrorCode(move_action_client_->getResult()->error_code);
-    }
-    else
-    {
-      RCLCPP_WARN_STREAM(rclcpp::get_logger("move_group_interface"), "Fail: " << move_action_client_->getState().toString() << ": "
-                                                             << move_action_client_->getState().getText());
-      return MoveItErrorCode(move_action_client_->getResult()->error_code);
-    }
-#else
-    return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
-#endif
+
+    auto res = result_future.get();
+    plan.trajectory_ = res.result->planned_trajectory;
+    plan.start_state_ = res.result->trajectory_start;
+    plan.planning_time_ = res.result->planning_time;
+    
+    return res.result->error_code;
   }
 
   MoveItErrorCode move(bool wait)
   {
-#if 0 //@todo
-    if (!move_action_client_)
+    if (!move_action_client_ || !move_action_client_->action_server_is_ready())
     {
-      return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
-    }
-    if (!move_action_client_->isServerConnected())
-    {
+      RCLCPP_INFO_STREAM(rclcpp::get_logger("move_group_interface"), "MoveGroup action client/server not ready");
       return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
     }
 
-    moveit_msgs::action::MoveGroupGoal goal;
+    moveit_msgs::action::MoveGroup::Goal goal;
     constructGoal(goal);
     goal.planning_options.plan_only = false;
     goal.planning_options.look_around = can_look_;
@@ -837,67 +787,67 @@ public:
     goal.planning_options.planning_scene_diff.is_diff = true;
     goal.planning_options.planning_scene_diff.robot_state.is_diff = true;
 
-    move_action_client_->sendGoal(goal);
+    auto future = move_action_client_->async_send_goal(goal);
     if (!wait)
+      return MoveItErrorCode::SUCCESS;
+
+    int64_t timeout = 3;
+    if (rclcpp::spin_until_future_complete(node_, future, std::chrono::seconds(timeout)) !=
+      rclcpp::executor::FutureReturnCode::SUCCESS)
     {
-      return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::SUCCESS);
+      RCLCPP_ERROR_STREAM(rclcpp::get_logger("move_group_interface"), "MoveGroup action failed or timeout reached");
+      return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
     }
 
-    if (!move_action_client_->waitForResult())
+    auto goal_handle = future.get();
+    auto result_future = move_action_client_->async_get_result(goal_handle);
+    auto wait_result = rclcpp::spin_until_future_complete(node_, result_future,
+     std::chrono::seconds(timeout));
+    if (wait_result != rclcpp::executor::FutureReturnCode::SUCCESS)
     {
-      RCLCPP_INFO_STREAM(rclcpp::get_logger("move_group_interface"), "MoveGroup action returned early");
+      RCLCPP_WARN_STREAM(rclcpp::get_logger("move_group_interface"), 
+                      "ErrorCode: " << wait_result);
     }
 
-    if (move_action_client_->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-    {
-      return MoveItErrorCode(move_action_client_->getResult()->error_code);
-    }
-    else
-    {
-      RCLCPP_INFO_STREAM(rclcpp::get_logger("move_group_interface"), move_action_client_->getState().toString()
-                                                        << ": " << move_action_client_->getState().getText());
-      return MoveItErrorCode(move_action_client_->getResult()->error_code);
-    }
-#else
-  return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
-#endif
+    auto res = result_future.get();
+    return res.result->error_code;
   }
 
   MoveItErrorCode execute(const Plan& plan, bool wait)
   {
-#if 0 //@todo
-    if (!execute_action_client_->isServerConnected())
+    if (!execute_action_client_ || !execute_action_client_->action_server_is_ready())
     {
+      RCLCPP_INFO_STREAM(rclcpp::get_logger("move_group_interface"), "execute_action_client_ client/server not ready");
       return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
     }
 
-    moveit_msgs::action::ExecuteTrajectoryGoal goal;
+    int64_t timeout = 3;
+    moveit_msgs::action::ExecuteTrajectory::Goal goal;
     goal.trajectory = plan.trajectory_;
 
-    execute_action_client_->sendGoal(goal);
+    auto future = execute_action_client_->async_send_goal(goal);
     if (!wait)
+      return MoveItErrorCode::SUCCESS;
+
+    if (rclcpp::spin_until_future_complete(node_, future, std::chrono::seconds(timeout)) !=
+          rclcpp::executor::FutureReturnCode::SUCCESS)
     {
-      return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::SUCCESS);
+      RCLCPP_ERROR_STREAM(rclcpp::get_logger("move_group_interface"), "execute_action_client_ action failed or timeout reached");
+      return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
     }
 
-    if (!execute_action_client_->waitForResult())
+    auto goal_handle = future.get();
+    auto result_future = execute_action_client_->async_get_result(goal_handle);
+    auto wait_result = rclcpp::spin_until_future_complete(node_, result_future,
+     std::chrono::seconds(timeout));
+    if (wait_result != rclcpp::executor::FutureReturnCode::SUCCESS)
     {
-      RCLCPP_INFO_STREAM(rclcpp::get_logger("move_group_interface"), "ExecuteTrajectory action returned early");
+      RCLCPP_WARN_STREAM(rclcpp::get_logger("move_group_interface"), 
+                      "ErrorCode: " << wait_result);
     }
 
-    if (execute_action_client_->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-    {
-      return MoveItErrorCode(execute_action_client_->getResult()->error_code);
-    }
-    else
-    {
-      RCLCPP_INFO_STREAM(rclcpp::get_logger("move_group_interface"), execute_action_client_->getState().toString()
-                                                        << ": " << execute_action_client_->getState().getText());
-      return MoveItErrorCode(execute_action_client_->getResult()->error_code);
-    }
-#else
-    return MoveItErrorCode(moveit_msgs::msg::MoveItErrorCodes::FAILURE);
-#endif
+    auto res = result_future.get();
+    return res.result->error_code;
   }
 
   double computeCartesianPath(const std::vector<geometry_msgs::msg::Pose>& waypoints, double step,
@@ -1123,19 +1073,17 @@ public:
     if (trajectory_constraints_)
       request.trajectory_constraints = *trajectory_constraints_;
   }
-#if 0 //@todo
-  void constructGoal(moveit_msgs::action::MoveGroupGoal& goal) const
+  
+  void constructGoal(moveit_msgs::action::MoveGroup::Goal& goal) const
   {
     constructMotionPlanRequest(goal.request);
   }
-#endif
 
-#if 0 //@todo
-  moveit_msgs::action::PickupGoal constructPickupGoal(const std::string& object,
+  moveit_msgs::action::Pickup::Goal constructPickupGoal(const std::string& object,
                                                       std::vector<moveit_msgs::msg::Grasp>&& grasps,
                                                       bool plan_only = false) const
   {
-    moveit_msgs::action::PickupGoal goal;
+    moveit_msgs::action::Pickup::Goal goal;
     goal.target_name = object;
     goal.group_name = opt_.group_name_;
     goal.end_effector = getEndEffector();
@@ -1159,11 +1107,11 @@ public:
     return goal;
   }
 
-  moveit_msgs::action::PlaceGoal constructPlaceGoal(const std::string& object,
+  moveit_msgs::action::Place::Goal constructPlaceGoal(const std::string& object,
                                                     std::vector<moveit_msgs::msg::PlaceLocation>&& locations,
                                                     bool plan_only = false) const
   {
-    moveit_msgs::action::PlaceGoal goal;
+    moveit_msgs::action::Place::Goal goal;
     goal.group_name = opt_.group_name_;
     goal.attached_object_name = object;
     goal.support_surface_name = support_surface_;
@@ -1185,7 +1133,7 @@ public:
     goal.planning_options.planning_scene_diff.robot_state.is_diff = true;
     return goal;
   }
-#endif
+
   void setPathConstraints(const moveit_msgs::msg::Constraints& constraint)
   {
     path_constraints_.reset(new moveit_msgs::msg::Constraints(constraint));
@@ -1311,12 +1259,12 @@ private:
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   robot_model::RobotModelConstPtr robot_model_;
   planning_scene_monitor::CurrentStateMonitorPtr current_state_monitor_;
-#if 0 //@todo
-  std::unique_ptr<actionlib::SimpleActionClient<moveit_msgs::action::MoveGroupAction> > move_action_client_;
-  std::unique_ptr<actionlib::SimpleActionClient<moveit_msgs::action::ExecuteTrajectoryAction> > execute_action_client_;
-  std::unique_ptr<actionlib::SimpleActionClient<moveit_msgs::action::PickupAction> > pick_action_client_;
-  std::unique_ptr<actionlib::SimpleActionClient<moveit_msgs::action::PlaceAction> > place_action_client_;
-#endif
+
+  std::shared_ptr<rclcpp_action::Client<moveit_msgs::action::MoveGroup>> move_action_client_;
+  std::shared_ptr<rclcpp_action::Client<moveit_msgs::action::Pickup>> pick_action_client_;
+  std::shared_ptr<rclcpp_action::Client<moveit_msgs::action::Place>> place_action_client_;
+  std::shared_ptr<rclcpp_action::Client<moveit_msgs::action::ExecuteTrajectory> > execute_action_client_;
+
   // general planning params
   robot_state::RobotStatePtr considered_start_state_;
   moveit_msgs::msg::WorkspaceParameters workspace_parameters_;
@@ -1489,12 +1437,12 @@ MoveItErrorCode MoveGroupInterface::asyncMove()
 {
   return impl_->move(false);
 }
-#if 0 //@todo
-actionlib::SimpleActionClient<moveit_msgs::action::MoveGroupAction>& MoveGroupInterface::getMoveGroupClient() const
+
+rclcpp_action::Client<moveit_msgs::action::MoveGroup>& MoveGroupInterface::getMoveGroupClient() const
 {
   return impl_->getMoveGroupClient();
 }
-#endif
+
 MoveItErrorCode MoveGroupInterface::move()
 {
   return impl_->move(true);
@@ -1514,31 +1462,31 @@ MoveItErrorCode MoveGroupInterface::plan(Plan& plan)
 {
   return impl_->plan(plan);
 }
-#if 0 //@todo
-moveit_msgs::action::PickupGoal MoveGroupInterface::constructPickupGoal(const std::string& object,
+
+moveit_msgs::action::Pickup::Goal MoveGroupInterface::constructPickupGoal(const std::string& object,
                                                                         std::vector<moveit_msgs::msg::Grasp> grasps,
                                                                         bool plan_only = false) const
 {
   return impl_->constructPickupGoal(object, std::move(grasps), plan_only);
 }
 
-moveit_msgs::action::PlaceGoal MoveGroupInterface::constructPlaceGoal(
+moveit_msgs::action::Place::Goal MoveGroupInterface::constructPlaceGoal(
     const std::string& object, std::vector<moveit_msgs::msg::PlaceLocation> locations, bool plan_only = false) const
 {
   return impl_->constructPlaceGoal(object, std::move(locations), plan_only);
 }
-#endif
+
 std::vector<moveit_msgs::msg::PlaceLocation>
 MoveGroupInterface::posesToPlaceLocations(const std::vector<geometry_msgs::msg::PoseStamped>& poses) const
 {
   return impl_->posesToPlaceLocations(poses);
 }
-#if 0 //@todo
-MoveItErrorCode MoveGroupInterface::pick(const moveit_msgs::action::PickupGoal& goal)
+
+MoveItErrorCode MoveGroupInterface::pick(const moveit_msgs::action::Pickup::Goal& goal)
 {
   return impl_->pick(goal);
 }
-#endif
+
 MoveItErrorCode MoveGroupInterface::planGraspsAndPick(const std::string& object, bool plan_only)
 {
   return impl_->planGraspsAndPick(object, plan_only);
@@ -1548,12 +1496,12 @@ MoveItErrorCode MoveGroupInterface::planGraspsAndPick(const moveit_msgs::msg::Co
 {
   return impl_->planGraspsAndPick(object, plan_only);
 }
-#if 0 //@todo
-MoveItErrorCode MoveGroupInterface::place(const moveit_msgs::action::PlaceGoal& goal)
+
+MoveItErrorCode MoveGroupInterface::place(const moveit_msgs::action::Place::Goal& goal)
 {
   return impl_->place(goal);
 }
-#endif
+
 double MoveGroupInterface::computeCartesianPath(const std::vector<geometry_msgs::msg::Pose>& waypoints, double eef_step,
                                                 double jump_threshold, moveit_msgs::msg::RobotTrajectory& trajectory,
                                                 bool avoid_collisions, moveit_msgs::msg::MoveItErrorCodes* error_code)

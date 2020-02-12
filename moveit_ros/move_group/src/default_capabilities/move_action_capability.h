@@ -37,14 +37,16 @@
 #pragma once
 
 #include <moveit/move_group/move_group_capability.h>
-#if 0 //@todo
-#include <actionlib/server/simple_action_server.h>
-#endif
+#include <rclcpp_action/rclcpp_action.hpp>
 #include <moveit_msgs/action/move_group.hpp>
 #include <memory>
 
 namespace move_group
 {
+
+using MGAction = moveit_msgs::action::MoveGroup;
+using MGActionGoal = rclcpp_action::ServerGoalHandle<MGAction>;
+
 class MoveGroupMoveAction : public MoveGroupCapability
 {
 public:
@@ -53,26 +55,23 @@ public:
   void initialize() override;
 
 private:
-#if 0 //@todo
-  void executeMoveCallback(const moveit_msgs::action::MoveGroupGoalConstPtr& goal);
-  void executeMoveCallbackPlanAndExecute(const moveit_msgs::action::MoveGroupGoalConstPtr& goal,
-                                         moveit_msgs::action::MoveGroupResult& action_res);
-  void executeMoveCallbackPlanOnly(const moveit_msgs::action::MoveGroupGoalConstPtr& goal,
-                                   moveit_msgs::action::MoveGroupResult& action_res);
-#endif
+
+  void executeMoveCallback(std::shared_ptr<MGActionGoal> goal);
+  void executeMoveCallbackPlanAndExecute(const std::shared_ptr<MGActionGoal>& goal,
+                                         std::shared_ptr<MGAction::Result>& action_res);
+  void executeMoveCallbackPlanOnly(const std::shared_ptr<MGActionGoal>& goal,
+                                   std::shared_ptr<MGAction::Result>& action_res);
+
   void startMoveExecutionCallback();
   void startMoveLookCallback();
   void preemptMoveCallback();
-  void setMoveState(MoveGroupState state);
-#if 0 //@todo
+  void setMoveState(MoveGroupState state, const std::shared_ptr<MGActionGoal>& goal);
+
   bool planUsingPlanningPipeline(const planning_interface::MotionPlanRequest& req,
                                  plan_execution::ExecutableMotionPlan& plan);
-#endif
 
-#if 0 //@todo
-  std::unique_ptr<actionlib::SimpleActionServer<moveit_msgs::action::MoveGroupAction> > move_action_server_;
-  moveit_msgs::action::MoveGroupFeedback move_feedback_;
-#endif
+  std::shared_ptr<rclcpp_action::Server<MGAction>> execute_action_server_;
+
   MoveGroupState move_state_;
   bool preempt_requested_;
 };

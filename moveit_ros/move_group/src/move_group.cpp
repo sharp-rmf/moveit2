@@ -185,16 +185,18 @@ private:
 
 int main(int argc, char** argv)
 {
+  rclcpp::init(argc, argv);
 #if 0 //@todo
-  ros::init(argc, argv, move_group::NODE_NAME);
-
   ros::AsyncSpinner spinner(1);
   spinner.start();
-  ros::NodeHandle nh;
+#endif
 
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer = std::make_shared<tf2_ros::Buffer>(ros::Duration(10.0));
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("move_group");
+
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer = std::make_shared<tf2_ros::Buffer>(nh->get_clock(), 
+    tf2::durationFromSec(10.0));
   std::shared_ptr<tf2_ros::TransformListener> tfl = std::make_shared<tf2_ros::TransformListener>(*tf_buffer, nh);
-
+#if 0 //@todo
   planning_scene_monitor::PlanningSceneMonitorPtr planning_scene_monitor(
       new planning_scene_monitor::PlanningSceneMonitor(ROBOT_DESCRIPTION, tf_buffer));
 

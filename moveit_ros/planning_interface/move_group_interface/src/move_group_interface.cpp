@@ -180,69 +180,6 @@ public:
                                                                                                << ".");
   }
 
-  template <typename T>
-  void waitForAction(const T& action, const std::string& name, const rclcpp::Time& timeout, double allotted_time) const
-  {
-    RCLCPP_DEBUG(rclcpp::get_logger("move_group_interface"), "Waiting for move_group action server (%s)...", name.c_str());
-#if 0 //@todo
-    // wait for the server (and spin as needed)
-    if (timeout == rclcpp::WallTime())  // wait forever
-    {
-      while (node_->ok() && !action->isServerConnected())
-      {
-        rclcpp::Duration(0.001).sleep();
-        // explicit ros::spinOnce on the callback queue used by NodeHandle that manages the action client
-        ros::CallbackQueue* queue = dynamic_cast<ros::CallbackQueue*>(node_->getCallbackQueue());
-        if (queue)
-        {
-          queue->callAvailable();
-        }
-        else  // in case of nodelets and specific callback queue implementations
-        {
-          RCLCPP_WARN_ONCE(rclcpp::get_logger("move_group_interface"), "Non-default CallbackQueue: Waiting for external queue "
-                                                      "handling.");
-        }
-      }
-    }
-    else  // wait with timeout
-    {
-      while (node_->ok() && !action->isServerConnected() && timeout > rclcpp::WallTime::now())
-      {
-        std::chrono::duration<double> d(0.001);
-        rclcpp::sleep_for(std::chrono::duration_cast<std::chrono::nanoseconds>(d), rclcpp::Context::SharedPtr(nullptr));
-
-        // explicit ros::spinOnce on the callback queue used by NodeHandle that manages the action client
-        auto groups = node_->get_callback_groups();
-        //rclcpp::CallbackQueue* queue = dynamic_cast<rclcpp::CallbackQueue*>();
-        if (groups.size())
-        {
-          auto l = groups[0].lock();
-          //->get()->callAvailable();
-        }
-        else  // in case of nodelets and specific callback queue implementations
-        {
-          RCLCPP_WARN_ONCE(rclcpp::get_logger("move_group_interface"), "Non-default CallbackQueue: Waiting for external queue "
-                                                      "handling.");
-        }
-      }
-    }
-#else
-    std::chrono::duration<double> d(0.001);
-    rclcpp::sleep_for(std::chrono::duration_cast<std::chrono::nanoseconds>(d), rclcpp::Context::SharedPtr(nullptr));
-#endif
-    if (!action->isServerConnected())
-    {
-      std::stringstream error;
-      error << "Unable to connect to move_group action server '" << name << "' within allotted time (" << allotted_time
-            << "s)";
-      throw std::runtime_error(error.str());
-    }
-    else
-    {
-      RCLCPP_DEBUG(rclcpp::get_logger("move_group_interface"), "Connected to '%s'", name.c_str());
-    }
-  }
-
   ~MoveGroupInterfaceImpl()
   {
     if (constraints_init_thread_)
@@ -1318,7 +1255,7 @@ MoveGroupInterface::MoveGroupInterface(const std::string& group_name, const std:
     throw std::runtime_error("ROS does not seem to be running");
   impl_ = new MoveGroupInterfaceImpl(Options(group_name), tf_buffer ? tf_buffer : getSharedTF(), wait_for_servers);
 }
-#if 0
+#if 0 //@todo
 MoveGroupInterface::MoveGroupInterface(const std::string& group, const std::shared_ptr<tf2_ros::Buffer>& tf_buffer,
                                        const rclcpp::Duration& wait_for_servers)
   : MoveGroupInterface(group, tf_buffer, rclcpp::Duration(wait_for_servers.toSec()))
